@@ -3,15 +3,15 @@
  * version $Revision: 1.5 $
  * created 28.05.2008 10:26:51 by kunina
  * last modified $Date: 2009/04/22 12:52:44 $ by $Author: kunina $
- * (C) ООО Крипто-Про 2004-2008.
+ * (C) РћРћРћ РљСЂРёРїС‚Рѕ-РџСЂРѕ 2004-2008.
  *
- * Программный код, содержащийся в этом файле, предназначен
- * для целей обучения. Может быть скопирован или модифицирован
- * при условии сохранения абзацев с указанием авторства и прав.
+ * РџСЂРѕРіСЂР°РјРјРЅС‹Р№ РєРѕРґ, СЃРѕРґРµСЂР¶Р°С‰РёР№СЃСЏ РІ СЌС‚РѕРј С„Р°Р№Р»Рµ, РїСЂРµРґРЅР°Р·РЅР°С‡РµРЅ
+ * РґР»СЏ С†РµР»РµР№ РѕР±СѓС‡РµРЅРёСЏ. РњРѕР¶РµС‚ Р±С‹С‚СЊ СЃРєРѕРїРёСЂРѕРІР°РЅ РёР»Рё РјРѕРґРёС„РёС†РёСЂРѕРІР°РЅ
+ * РїСЂРё СѓСЃР»РѕРІРёРё СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°Р±Р·Р°С†РµРІ СЃ СѓРєР°Р·Р°РЅРёРµРј Р°РІС‚РѕСЂСЃС‚РІР° Рё РїСЂР°РІ.
  *
- * Данный код не может быть непосредственно использован
- * для защиты информации. Компания Крипто-Про не несет никакой
- * ответственности за функционирование этого кода.
+ * Р”Р°РЅРЅС‹Р№ РєРѕРґ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅ
+ * РґР»СЏ Р·Р°С‰РёС‚С‹ РёРЅС„РѕСЂРјР°С†РёРё. РљРѕРјРїР°РЅРёСЏ РљСЂРёРїС‚Рѕ-РџСЂРѕ РЅРµ РЅРµСЃРµС‚ РЅРёРєР°РєРѕР№
+ * РѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕСЃС‚Рё Р·Р° С„СѓРЅРєС†РёРѕРЅРёСЂРѕРІР°РЅРёРµ СЌС‚РѕРіРѕ РєРѕРґР°.
  */
 package com.luxoft.pkcs7.cms.tests;
 
@@ -60,12 +60,12 @@ public static void main(String[] args) throws Exception {
 	cli.init(args);
 	System.out.println(cli.toString());
 	
-    // cms-сообщение для расшифрования
+    // cms-СЃРѕРѕР±С‰РµРЅРёРµ РґР»СЏ СЂР°СЃС€РёС„СЂРѕРІР°РЅРёСЏ
 	String encryptedFilePath = (cli.contains(ENCRYPTED_FILE) ? cli.getParam(ENCRYPTED_FILE) : CMS_FILE_PATH);
 	System.out.println("File for encryption: " + encryptedFilePath);
     final byte[] buffer = Array.readFile(encryptedFilePath);
     
-    //разбор CMS-сообщения
+    //СЂР°Р·Р±РѕСЂ CMS-СЃРѕРѕР±С‰РµРЅРёСЏ
     Asn1BerDecodeBuffer dbuf = new Asn1BerDecodeBuffer(buffer);
     final ContentInfo all = new ContentInfo();
     all.decode(dbuf);
@@ -98,10 +98,10 @@ public static void main(String[] args) throws Exception {
     final OID cipherOID = new OID(params.encryptionParamSet.value);
     final byte[] text = cms.encryptedContentInfo.encryptedContent.value;
 
-    //Загрузка хранилища
+    //Р—Р°РіСЂСѓР·РєР° С…СЂР°РЅРёР»РёС‰Р°
     final KeyStore hdImageStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
     hdImageStore.load(null, null);
-    //получатель - закрытый ключ
+    //РїРѕР»СѓС‡Р°С‚РµР»СЊ - Р·Р°РєСЂС‹С‚С‹Р№ РєР»СЋС‡
     String containerAlias = (cli.contains(CONTAINER_ALIAS) ? cli.getParam(CONTAINER_ALIAS) : "Tinkoff");
     System.out.println("Container alias: " + containerAlias);
     char[] containerPassword = (cli.contains(CONTAINER_PASSWORD) ? cli.getParam(CONTAINER_PASSWORD).toCharArray() : null);
@@ -112,26 +112,26 @@ public static void main(String[] args) throws Exception {
     }
     System.out.println("Tinkoff Private key alg: " + responderKey.getAlgorithm());
 
-    //отправитель - открытый ключ из cms
+    //РѕС‚РїСЂР°РІРёС‚РµР»СЊ - РѕС‚РєСЂС‹С‚С‹Р№ РєР»СЋС‡ РёР· cms
     final X509EncodedKeySpec pspec = new X509EncodedKeySpec(encodedPub);
     final KeyFactory kf = KeyFactory.getInstance(JCP.GOST_DH_NAME);
     final PublicKey senderPublic = kf.generatePublic(pspec);
     System.out.println("Rapida Public key alg: " + senderPublic.getAlgorithm());
     
-    // выработка ключа согласования получателем
+    // РІС‹СЂР°Р±РѕС‚РєР° РєР»СЋС‡Р° СЃРѕРіР»Р°СЃРѕРІР°РЅРёСЏ РїРѕР»СѓС‡Р°С‚РµР»РµРј
     final KeyAgreement responderKeyAgree = KeyAgreement.getInstance(JCP.GOST_DH_NAME);
     responderKeyAgree.init(responderKey, new IvParameterSpec(sv), null);
     responderKeyAgree.doPhase(senderPublic, true);
     final SecretKey responderSecret = responderKeyAgree
             .generateSecret("GOST28147");
 
-    // Расшифрование симметричного ключа.
+    // Р Р°СЃС€РёС„СЂРѕРІР°РЅРёРµ СЃРёРјРјРµС‚СЂРёС‡РЅРѕРіРѕ РєР»СЋС‡Р°.
     final Cipher cipher = Cipher.getInstance(CIPHER_MODE);
     cipher.init(Cipher.UNWRAP_MODE, responderSecret, (SecureRandom) null);
     final SecretKey simmKey = (SecretKey) cipher
             .unwrap(wrapKey, null, Cipher.SECRET_KEY);
 
-    // Расшифрование текста на симметричном ключе.
+    // Р Р°СЃС€РёС„СЂРѕРІР°РЅРёРµ С‚РµРєСЃС‚Р° РЅР° СЃРёРјРјРµС‚СЂРёС‡РЅРѕРј РєР»СЋС‡Рµ.
     final GostCipherSpec spec = new GostCipherSpec(iv, cipherOID);
     cipher.init(Cipher.DECRYPT_MODE, simmKey, spec, null); 
     byte[] result = cipher.doFinal(text, 0, text.length);

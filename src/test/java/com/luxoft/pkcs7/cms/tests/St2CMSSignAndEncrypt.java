@@ -3,15 +3,15 @@
  * version $Revision: 1.5 $
  * created 21.05.2008 12:17:43 by kunina
  * last modified $Date: 2009/04/22 12:52:44 $ by $Author: kunina $
- * (C) ООО Крипто-Про 2004-2008.
+ * (C) РћРћРћ РљСЂРёРїС‚Рѕ-РџСЂРѕ 2004-2008.
  *
- * Программный код, содержащийся в этом файле, предназначен
- * для целей обучения. Может быть скопирован или модифицирован
- * при условии сохранения абзацев с указанием авторства и прав.
+ * РџСЂРѕРіСЂР°РјРјРЅС‹Р№ РєРѕРґ, СЃРѕРґРµСЂР¶Р°С‰РёР№СЃСЏ РІ СЌС‚РѕРј С„Р°Р№Р»Рµ, РїСЂРµРґРЅР°Р·РЅР°С‡РµРЅ
+ * РґР»СЏ С†РµР»РµР№ РѕР±СѓС‡РµРЅРёСЏ. РњРѕР¶РµС‚ Р±С‹С‚СЊ СЃРєРѕРїРёСЂРѕРІР°РЅ РёР»Рё РјРѕРґРёС„РёС†РёСЂРѕРІР°РЅ
+ * РїСЂРё СѓСЃР»РѕРІРёРё СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°Р±Р·Р°С†РµРІ СЃ СѓРєР°Р·Р°РЅРёРµРј Р°РІС‚РѕСЂСЃС‚РІР° Рё РїСЂР°РІ.
  *
- * Данный код не может быть непосредственно использован
- * для защиты информации. Компания Крипто-Про не несет никакой
- * ответственности за функционирование этого кода.
+ * Р”Р°РЅРЅС‹Р№ РєРѕРґ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅ
+ * РґР»СЏ Р·Р°С‰РёС‚С‹ РёРЅС„РѕСЂРјР°С†РёРё. РљРѕРјРїР°РЅРёСЏ РљСЂРёРїС‚Рѕ-РџСЂРѕ РЅРµ РЅРµСЃРµС‚ РЅРёРєР°РєРѕР№
+ * РѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕСЃС‚Рё Р·Р° С„СѓРЅРєС†РёРѕРЅРёСЂРѕРІР°РЅРёРµ СЌС‚РѕРіРѕ РєРѕРґР°.
  */
 package com.luxoft.pkcs7.cms.tests;
 
@@ -73,7 +73,7 @@ public class St2CMSSignAndEncrypt {
 	protected static final String CIPHER_MODE = "GOST28147/CFB/NoPadding";
 
 	/**
-	 * вектор усложнения ключа согласования
+	 * РІРµРєС‚РѕСЂ СѓСЃР»РѕР¶РЅРµРЅРёСЏ РєР»СЋС‡Р° СЃРѕРіР»Р°СЃРѕРІР°РЅРёСЏ
 	 */
 	private static final byte[] sv = {
 			0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11
@@ -81,19 +81,19 @@ public class St2CMSSignAndEncrypt {
 
 	public static void main(String[] args) throws Exception {
 
-		// данные для подписи и последющего шифрования
+		// РґР°РЅРЅС‹Рµ РґР»СЏ РїРѕРґРїРёСЃРё Рё РїРѕСЃР»РµРґСЋС‰РµРіРѕ С€РёС„СЂРѕРІР°РЅРёСЏ
 		final byte[] data = Array.readFile("C:\\developer\\temp\\COMPAY2TCS_201206261.csv");
 
-		// Загрузка хранилища
+		// Р—Р°РіСЂСѓР·РєР° С…СЂР°РЅРёР»РёС‰Р°
 		final KeyStore hdImageStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
 		hdImageStore.load(null, null);
-		// ключ отправителя
+		// РєР»СЋС‡ РѕС‚РїСЂР°РІРёС‚РµР»СЏ
 		final PrivateKey senderKey = (PrivateKey) hdImageStore.getKey("Rapida", "a".toCharArray());
 		final X509Certificate publicSenderCert = (X509Certificate) hdImageStore.getCertificate("Rapida");
-		// ключ получателя
+		// РєР»СЋС‡ РїРѕР»СѓС‡Р°С‚РµР»СЏ
 		final X509Certificate publicCert = (X509Certificate) hdImageStore.getCertificate("Tinkoff");
 
-		// создание SignedData
+		// СЃРѕР·РґР°РЅРёРµ SignedData
 		final ContentInfo contentSign = new ContentInfo();
 		contentSign.contentType = new Asn1ObjectIdentifier(new OID("1.2.840.113549.1.7.2").value);
 		final SignedData signedData = new SignedData();
@@ -141,7 +141,7 @@ public class St2CMSSignAndEncrypt {
 		final Asn1BerEncodeBuffer asnBuf = new Asn1BerEncodeBuffer();
 		contentSign.encode(asnBuf, true);
 
-		// данные для envelopedData
+		// РґР°РЅРЅС‹Рµ РґР»СЏ envelopedData
 		byte[] buffer = asnBuf.getMsgCopy();
 
 		// apply base64
@@ -150,30 +150,30 @@ public class St2CMSSignAndEncrypt {
 
 		final PublicKey responderPublic = publicCert.getPublicKey();
 
-		// выработка ключа согласования отправителем
+		// РІС‹СЂР°Р±РѕС‚РєР° РєР»СЋС‡Р° СЃРѕРіР»Р°СЃРѕРІР°РЅРёСЏ РѕС‚РїСЂР°РІРёС‚РµР»РµРј
 		final KeyAgreement senderKeyAgree = KeyAgreement.getInstance(JCP.GOST_DH_NAME);
 		senderKeyAgree.init(senderKey, new IvParameterSpec(sv), null);
 		senderKeyAgree.doPhase(responderPublic, true);
 		final SecretKey alisaSecret = senderKeyAgree.generateSecret("GOST28147");
 
-		// Генерирование симметричного ключа с параметрами шифрования из
-		// контрольной панели.
+		// Р“РµРЅРµСЂРёСЂРѕРІР°РЅРёРµ СЃРёРјРјРµС‚СЂРёС‡РЅРѕРіРѕ РєР»СЋС‡Р° СЃ РїР°СЂР°РјРµС‚СЂР°РјРё С€РёС„СЂРѕРІР°РЅРёСЏ РёР·
+		// РєРѕРЅС‚СЂРѕР»СЊРЅРѕР№ РїР°РЅРµР»Рё.
 		final KeyGenerator kg = KeyGenerator.getInstance("GOST28147");
 		final ParamsInterface paramss = AlgIdSpec.getDefaultCryptParams();
 		kg.init(paramss);
 		final SecretKey simm = kg.generateKey();
 
-		// Зашифрование текста на симметричном ключе.
+		// Р—Р°С€РёС„СЂРѕРІР°РЅРёРµ С‚РµРєСЃС‚Р° РЅР° СЃРёРјРјРµС‚СЂРёС‡РЅРѕРј РєР»СЋС‡Рµ.
 		final Cipher cipher = Cipher.getInstance(CIPHER_MODE);
 		cipher.init(Cipher.ENCRYPT_MODE, simm, (SecureRandom) null);
 		final byte[] iv = cipher.getIV();
 		final byte[] text = cipher.doFinal(buffer, 0, buffer.length);
 
-		// Зашифрование симметричного ключа на ключе согласования отправителя
+		// Р—Р°С€РёС„СЂРѕРІР°РЅРёРµ СЃРёРјРјРµС‚СЂРёС‡РЅРѕРіРѕ РєР»СЋС‡Р° РЅР° РєР»СЋС‡Рµ СЃРѕРіР»Р°СЃРѕРІР°РЅРёСЏ РѕС‚РїСЂР°РІРёС‚РµР»СЏ
 		cipher.init(Cipher.WRAP_MODE, alisaSecret, (SecureRandom) null);
 		final byte[] key = cipher.wrap(simm);
 
-		// формирование CMS-сообщения
+		// С„РѕСЂРјРёСЂРѕРІР°РЅРёРµ CMS-СЃРѕРѕР±С‰РµРЅРёСЏ
 		final ContentInfo all = new ContentInfo();
 		all.contentType = new Asn1ObjectIdentifier(new OID("1.2.840.113549.1.7.3").value);
 		final EnvelopedData cms = new EnvelopedData();

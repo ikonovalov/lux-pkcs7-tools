@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * 
+ * @author Igor Konovalov ikonovalov@luxoft.com
+ *
+ */
 public class CLIParser {
 	
 	public static final String ENCRYPTED_FILE = "-ef";

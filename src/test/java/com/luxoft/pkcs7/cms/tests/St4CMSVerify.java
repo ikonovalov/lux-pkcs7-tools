@@ -3,15 +3,15 @@
  * version $Revision: 1.11 $
  * created 16.08.2007 11:28:24 by kunina
  * last modified $Date: 2009/04/24 11:12:13 $ by $Author: kunina $
- * (C) ООО Крипто-Про 2004-2007.
+ * (C) РћРћРћ РљСЂРёРїС‚Рѕ-РџСЂРѕ 2004-2007.
  *
- * Программный код, содержащийся в этом файле, предназначен
- * для целей обучения. Может быть скопирован или модифицирован 
- * при условии сохранения абзацев с указанием авторства и прав.
+ * РџСЂРѕРіСЂР°РјРјРЅС‹Р№ РєРѕРґ, СЃРѕРґРµСЂР¶Р°С‰РёР№СЃСЏ РІ СЌС‚РѕРј С„Р°Р№Р»Рµ, РїСЂРµРґРЅР°Р·РЅР°С‡РµРЅ
+ * РґР»СЏ С†РµР»РµР№ РѕР±СѓС‡РµРЅРёСЏ. РњРѕР¶РµС‚ Р±С‹С‚СЊ СЃРєРѕРїРёСЂРѕРІР°РЅ РёР»Рё РјРѕРґРёС„РёС†РёСЂРѕРІР°РЅ 
+ * РїСЂРё СѓСЃР»РѕРІРёРё СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°Р±Р·Р°С†РµРІ СЃ СѓРєР°Р·Р°РЅРёРµРј Р°РІС‚РѕСЂСЃС‚РІР° Рё РїСЂР°РІ.
  *
- * Данный код не может быть непосредственно использован
- * для защиты информации. Компания Крипто-Про не несет никакой
- * ответственности за функционирование этого кода.
+ * Р”Р°РЅРЅС‹Р№ РєРѕРґ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅ
+ * РґР»СЏ Р·Р°С‰РёС‚С‹ РёРЅС„РѕСЂРјР°С†РёРё. РљРѕРјРїР°РЅРёСЏ РљСЂРёРїС‚Рѕ-РџСЂРѕ РЅРµ РЅРµСЃРµС‚ РЅРёРєР°РєРѕР№
+ * РѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕСЃС‚Рё Р·Р° С„СѓРЅРєС†РёРѕРЅРёСЂРѕРІР°РЅРёРµ СЌС‚РѕРіРѕ РєРѕРґР°.
  */
 package com.luxoft.pkcs7.cms.tests;
 
@@ -42,22 +42,22 @@ import java.security.cert.X509Certificate;
 import static com.luxoft.pkcs7.cms.tests.CLIParser.*;
 
 /**
- * CMS Verify (поиск сертификатов: 1)CMS, 2)заданные сертификаты, 3)store(?))
- * [Проверка параллельных подписей и подписей с signedAttributes]
+ * CMS Verify (РїРѕРёСЃРє СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ: 1)CMS, 2)Р·Р°РґР°РЅРЅС‹Рµ СЃРµСЂС‚РёС„РёРєР°С‚С‹, 3)store(?))
+ * [РџСЂРѕРІРµСЂРєР° РїР°СЂР°Р»Р»РµР»СЊРЅС‹С… РїРѕРґРїРёСЃРµР№ Рё РїРѕРґРїРёСЃРµР№ СЃ signedAttributes]
  * <p/>
- * Проверяет:
+ * РџСЂРѕРІРµСЂСЏРµС‚:
  * <p/>
  * CMS_samples.CMSSign
  * <p/>
  * csptest -lowsign -in data.txt -my key -sign -out data_low.sgn -add
  * <p/>
- * csptest -lowsign -in data.txt -my key -sign -out data_low.sgn (нет вложенного
- * сертификата)
+ * csptest -lowsign -in data.txt -my key -sign -out data_low.sgn (РЅРµС‚ РІР»РѕР¶РµРЅРЅРѕРіРѕ
+ * СЃРµСЂС‚РёС„РёРєР°С‚Р°)
  * <p/>
  * csptest -sfsign -in data.txt -my key -sign -out data_sf.sgn -add
  * <p/>
- * csptest -sfsign -in data.txt -my key -sign -out data_sf.sgn (нет вложенного
- * сертификата)
+ * csptest -sfsign -in data.txt -my key -sign -out data_sf.sgn (РЅРµС‚ РІР»РѕР¶РµРЅРЅРѕРіРѕ
+ * СЃРµСЂС‚РёС„РёРєР°С‚Р°)
  * 
  * @author Copyright 2004-2009 Crypto-Pro. All rights reserved.
  * @.Version
@@ -78,14 +78,14 @@ public class St4CMSVerify {
 	}
 
 	/**
-	 * проверка CMS
+	 * РїСЂРѕРІРµСЂРєР° CMS
 	 * 
 	 * @param buffer
-	 *            буфер
+	 *            Р±СѓС„РµСЂ
 	 * @param certs
-	 *            сертификаты
+	 *            СЃРµСЂС‚РёС„РёРєР°С‚С‹
 	 * @param data
-	 *            данные
+	 *            РґР°РЅРЅС‹Рµ
 	 * @throws Exception
 	 *             e
 	 */
@@ -135,7 +135,7 @@ public class St4CMSVerify {
 			throw new Exception("Unknown digest");
 		final OID eContTypeOID = new OID(signedData.encapContentInfo.eContentType.value);
 		if (signedData.certificates != null) {
-			// Проверка на вложенных сертификатах
+			// РџСЂРѕРІРµСЂРєР° РЅР° РІР»РѕР¶РµРЅРЅС‹С… СЃРµСЂС‚РёС„РёРєР°С‚Р°С…
 			System.out.println("Validation on certificates founded in CMS.");
 			for (int i = 0; i < signedData.certificates.elements.length; i++) {
 				final Asn1BerEncodeBuffer encBuf = new Asn1BerEncodeBuffer();
@@ -153,7 +153,7 @@ public class St4CMSVerify {
 				}
 			}
 		} else if (certs != null) {
-			// Проверка на указанных сертификатах
+			// РџСЂРѕРІРµСЂРєР° РЅР° СѓРєР°Р·Р°РЅРЅС‹С… СЃРµСЂС‚РёС„РёРєР°С‚Р°С…
 			System.out.println("Certificates for validation not found in CMS.\n"
 					+ "      Try verify on specified certificates...");
 			for (int i = 0; i < certs.length; i++) {
@@ -178,34 +178,34 @@ public class St4CMSVerify {
 	}
 
 	/**
-	 * Попытка проверки подписи на указанном сертификате
+	 * РџРѕРїС‹С‚РєР° РїСЂРѕРІРµСЂРєРё РїРѕРґРїРёСЃРё РЅР° СѓРєР°Р·Р°РЅРЅРѕРј СЃРµСЂС‚РёС„РёРєР°С‚Рµ
 	 * 
 	 * @param cert
-	 *            сертификат для проверки
+	 *            СЃРµСЂС‚РёС„РёРєР°С‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё
 	 * @param text
-	 *            текст для проверки
+	 *            С‚РµРєСЃС‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё
 	 * @param info
-	 *            подпись
-	 * @return верна ли подпись
+	 *            РїРѕРґРїРёСЃСЊ
+	 * @return РІРµСЂРЅР° Р»Рё РїРѕРґРїРёСЃСЊ
 	 * @throws Exception
-	 *             ошибки
+	 *             РѕС€РёР±РєРё
 	 */
 	private static boolean verifyOnCert(X509Certificate cert, SignerInfo info, byte[] text, OID eContentTypeOID)
 			throws Exception {
 
-		// подпись
+		// РїРѕРґРїРёСЃСЊ
 		final byte[] sign = info.signature.value;
-		// данные для проверки подписи
+		// РґР°РЅРЅС‹Рµ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРїРёСЃРё
 		final byte[] data;
 		if (info.signedAttrs == null) {
-			// аттрибуты подписи не присутствуют
-			// данные для проверки подписи
+			// Р°С‚С‚СЂРёР±СѓС‚С‹ РїРѕРґРїРёСЃРё РЅРµ РїСЂРёСЃСѓС‚СЃС‚РІСѓСЋС‚
+			// РґР°РЅРЅС‹Рµ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРїРёСЃРё
 			data = text;
 		} else {
-			// присутствуют аттрибуты подписи (SignedAttr)
+			// РїСЂРёСЃСѓС‚СЃС‚РІСѓСЋС‚ Р°С‚С‚СЂРёР±СѓС‚С‹ РїРѕРґРїРёСЃРё (SignedAttr)
 			final Attribute[] signAttrElem = info.signedAttrs.elements;
 
-			// проверка аттрибута content-type
+			// РїСЂРѕРІРµСЂРєР° Р°С‚С‚СЂРёР±СѓС‚Р° content-type
 			final Asn1ObjectIdentifier contentTypeOid = new Asn1ObjectIdentifier(
 					(new OID("1.2.840.113549.1.9.3")).value);
 			Attribute contentTypeAttr = null;
@@ -223,7 +223,7 @@ public class St4CMSVerify {
 			if (!contentTypeAttr.values.elements[0].equals(new Asn1ObjectIdentifier(eContentTypeOID.value)))
 				throw new Exception("content-type attribute OID not equal eContentType OID");
 
-			// проверка аттрибута message-digest
+			// РїСЂРѕРІРµСЂРєР° Р°С‚С‚СЂРёР±СѓС‚Р° message-digest
 			final Asn1ObjectIdentifier messageDigestOid = new Asn1ObjectIdentifier(
 					(new OID("1.2.840.113549.1.9.4")).value);
 
@@ -243,13 +243,13 @@ public class St4CMSVerify {
 			final Asn1OctetString hash = (Asn1OctetString) open;
 			final byte[] md = hash.value;
 
-			// вычисление messageDigest
+			// РІС‹С‡РёСЃР»РµРЅРёРµ messageDigest
 			final byte[] dm = digestm(text, JCP.GOST_DIGEST_NAME);
 
 			if (!Array.toHexString(dm).equals(Array.toHexString(md)))
 				throw new Exception("message-digest attribute verify failed");
 
-			// проверка аттрибута signing-time
+			// РїСЂРѕРІРµСЂРєР° Р°С‚С‚СЂРёР±СѓС‚Р° signing-time
 			final Asn1ObjectIdentifier signTimeOid = new Asn1ObjectIdentifier((new OID("1.2.840.113549.1.9.5")).value);
 
 			Attribute signTimeAttr = null;
@@ -262,15 +262,15 @@ public class St4CMSVerify {
 			}
 
 			if (signTimeAttr != null) {
-				// проверка (необязательно)
+				// РїСЂРѕРІРµСЂРєР° (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)
 			}
 
-			// данные для проверки подписи
+			// РґР°РЅРЅС‹Рµ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРїРёСЃРё
 			final Asn1BerEncodeBuffer encBufSignedAttr = new Asn1BerEncodeBuffer();
 			info.signedAttrs.encode(encBufSignedAttr);
 			data = encBufSignedAttr.getMsgCopy();
 		}
-		// проверка подписи
+		// РїСЂРѕРІРµСЂРєР° РїРѕРґРїРёСЃРё
 		final Signature signature = Signature.getInstance(JCP.GOST_EL_SIGN_NAME);
 		signature.initVerify(cert);
 		signature.update(data);
@@ -281,13 +281,13 @@ public class St4CMSVerify {
 	 * write log
 	 * 
 	 * @param checkResult
-	 *            прошла ли проверка
+	 *            РїСЂРѕС€Р»Р° Р»Рё РїСЂРѕРІРµСЂРєР°
 	 * @param signNum
-	 *            номер подписи
+	 *            РЅРѕРјРµСЂ РїРѕРґРїРёСЃРё
 	 * @param certNum
-	 *            номер сертификата
+	 *            РЅРѕРјРµСЂ СЃРµСЂС‚РёС„РёРєР°С‚Р°
 	 * @param cert
-	 *            сертификат
+	 *            СЃРµСЂС‚РёС„РёРєР°С‚
 	 */
 	private static void writeLog(boolean checkResult, int signNum, int certNum, X509Certificate cert) {
 

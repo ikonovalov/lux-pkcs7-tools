@@ -30,14 +30,13 @@ public class ValidatePathAndCRL {
 		Security.setProperty("ocsp.enable", String.valueOf(false));
 		
 	  
-        // уникальное имя сертификата открытого ключа
-        final String aliasEndCert = "owa.luxoft";
+        // СѓРЅРёРєР°Р»СЊРЅРѕРµ РёРјСЏ СЃРµСЂС‚РёС„РёРєР°С‚Р° РѕС‚РєСЂС‹С‚РѕРіРѕ РєР»СЋС‡Р°
+        final String aliasEndCert = "piv";
         
-        
-       //инициализация хранилища доверенных сертификатов и ключевого носителя
+       //РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ С…СЂР°РЅРёР»РёС‰Р° РґРѕРІРµСЂРµРЅРЅС‹С… СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ Рё РєР»СЋС‡РµРІРѕРіРѕ РЅРѕСЃРёС‚РµР»СЏ
         final KeyStore keyStore = KeyStore.getInstance("HDImageStore");
 
-        // загрузка содержимого хранилища
+        // Р·Р°РіСЂСѓР·РєР° СЃРѕРґРµСЂР¶РёРјРѕРіРѕ С…СЂР°РЅРёР»РёС‰Р°
         keyStore.load(new FileInputStream("C:\\var\\CPROcsp\\certstore"), null);
         
         final X509Certificate certEnd = (X509Certificate) keyStore.getCertificate(aliasEndCert);
