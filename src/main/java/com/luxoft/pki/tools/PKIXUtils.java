@@ -96,10 +96,10 @@ public class PKIXUtils {
 	}
 
 	/**
-	 * Получние информации об OCSP
+	 * РџРѕР»СѓС‡РЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РѕР± OCSP
 	 * 
 	 * @param cert
-	 *            X509Certificate, который возможно содержит адрес OCSP
+	 *            X509Certificate, РєРѕС‚РѕСЂС‹Р№ РІРѕР·РјРѕР¶РЅРѕ СЃРѕРґРµСЂР¶РёС‚ Р°РґСЂРµСЃ OCSP
 	 * @return List<String> of OSCP URLs
 	 */
 	public static List<String> getAuthorityInformationAccess(X509Certificate cert) {
@@ -133,7 +133,7 @@ public class PKIXUtils {
 	}
 
 	/**
-	 * Загрузка CRL через url
+	 * Р—Р°РіСЂСѓР·РєР° CRL С‡РµСЂРµР· url
 	 * @param crlURL
 	 * @return
 	 * @throws MalformedURLException
@@ -216,9 +216,9 @@ public class PKIXUtils {
 	}
 	
 	/**
-	 * Получение всех сертификатов из хранилища.
-	 * @param keyStore - хранилище ключей (и дополнительный certstore, если подключен)
-	 * @return массив Certificate[]. Null недопустим, может быть массив нулевой длинны.
+	 * РџРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ РёР· С…СЂР°РЅРёР»РёС‰Р°.
+	 * @param keyStore - С…СЂР°РЅРёР»РёС‰Рµ РєР»СЋС‡РµР№ (Рё РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Р№ certstore, РµСЃР»Рё РїРѕРґРєР»СЋС‡РµРЅ)
+	 * @return РјР°СЃСЃРёРІ Certificate[]. Null РЅРµРґРѕРїСѓСЃС‚РёРј, РјРѕР¶РµС‚ Р±С‹С‚СЊ РјР°СЃСЃРёРІ РЅСѓР»РµРІРѕР№ РґР»РёРЅРЅС‹.
 	 */
 	public static Certificate[] getAllCertificatesInStore(KeyStore keyStore) {
 		Certificate[] res = new Certificate[0];

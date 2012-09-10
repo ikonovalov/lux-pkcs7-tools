@@ -62,10 +62,10 @@ public class CertificateVerifier {
 		
 	
 	/**
-	 * Построение цепочки сертификатов и их проверка в CRLDP и(или) OCSP
-	 * @param cert - проверяемый сертификат
-	 * @param keyStore - хранилище ключей, из которого беруться сертификаты. Все корневые сертификаты будут добавлены в TrustedAnchors, а остальные в промежуточные.
-	 * @param allowSelfSigned - true - попускает, что первый параметр будет самоподписанным сертификатом.
+	 * РџРѕСЃС‚СЂРѕРµРЅРёРµ С†РµРїРѕС‡РєРё СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ Рё РёС… РїСЂРѕРІРµСЂРєР° РІ CRLDP Рё(РёР»Рё) OCSP
+	 * @param cert - РїСЂРѕРІРµСЂСЏРµРјС‹Р№ СЃРµСЂС‚РёС„РёРєР°С‚
+	 * @param keyStore - С…СЂР°РЅРёР»РёС‰Рµ РєР»СЋС‡РµР№, РёР· РєРѕС‚РѕСЂРѕРіРѕ Р±РµСЂСѓС‚СЊСЃСЏ СЃРµСЂС‚РёС„РёРєР°С‚С‹. Р’СЃРµ РєРѕСЂРЅРµРІС‹Рµ СЃРµСЂС‚РёС„РёРєР°С‚С‹ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»РµРЅС‹ РІ TrustedAnchors, Р° РѕСЃС‚Р°Р»СЊРЅС‹Рµ РІ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹Рµ.
+	 * @param allowSelfSigned - true - РїРѕРїСѓСЃРєР°РµС‚, С‡С‚Рѕ РїРµСЂРІС‹Р№ РїР°СЂР°РјРµС‚СЂ Р±СѓРґРµС‚ СЃР°РјРѕРїРѕРґРїРёСЃР°РЅРЅС‹Рј СЃРµСЂС‚РёС„РёРєР°С‚РѕРј.
 	 * @return CertificateVerificationResult
 	 * @throws CertificateVerificationException
 	 */
@@ -116,7 +116,7 @@ public class CertificateVerifier {
 	 *            certificates are considered to be trusted root CA
 	 *            certificates. All the rest are considered to be intermediate
 	 *            CA certificates.
-	 * @param allowSelfSigned - допускать самоподписанные сертификаты
+	 * @param allowSelfSigned - РґРѕРїСѓСЃРєР°С‚СЊ СЃР°РјРѕРїРѕРґРїРёСЃР°РЅРЅС‹Рµ СЃРµСЂС‚РёС„РёРєР°С‚С‹
 	 * @return the certification chain (if verification is successful)
 	 * @throws CertificateVerificationException
 	 *             - if the certification is not successful (e.g. certification
@@ -241,11 +241,11 @@ public class CertificateVerifier {
 	}
 	
 	/**
-	 * Автоматическая валидация сертификата через флаги включения OCSP и CRLDP с помощью CertPathValidator
-	 * @param cert - сертификат, который нужно проверить в CRL
-	 * @param certPath - сепочка сертификатов полеченная от билдера или из хранилища
-	 * @param trustedRootCerts - набор доверенных сертификатов
-	 * @param intermediateCerts - набор промежуточных сертификатов для построения цепочки (ну вот такое тупое API у java в этом месте, потому что из цепочки нельзя обратно выбрать trusted и intermid сертификаты)
+	 * РђРІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ РІР°Р»РёРґР°С†РёСЏ СЃРµСЂС‚РёС„РёРєР°С‚Р° С‡РµСЂРµР· С„Р»Р°РіРё РІРєР»СЋС‡РµРЅРёСЏ OCSP Рё CRLDP СЃ РїРѕРјРѕС‰СЊСЋ CertPathValidator
+	 * @param cert - СЃРµСЂС‚РёС„РёРєР°С‚, РєРѕС‚РѕСЂС‹Р№ РЅСѓР¶РЅРѕ РїСЂРѕРІРµСЂРёС‚СЊ РІ CRL
+	 * @param certPath - СЃРµРїРѕС‡РєР° СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ РїРѕР»РµС‡РµРЅРЅР°СЏ РѕС‚ Р±РёР»РґРµСЂР° РёР»Рё РёР· С…СЂР°РЅРёР»РёС‰Р°
+	 * @param trustedRootCerts - РЅР°Р±РѕСЂ РґРѕРІРµСЂРµРЅРЅС‹С… СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ
+	 * @param intermediateCerts - РЅР°Р±РѕСЂ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹С… СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ С†РµРїРѕС‡РєРё (РЅСѓ РІРѕС‚ С‚Р°РєРѕРµ С‚СѓРїРѕРµ API Сѓ java РІ СЌС‚РѕРј РјРµСЃС‚Рµ, РїРѕС‚РѕРјСѓ С‡С‚Рѕ РёР· С†РµРїРѕС‡РєРё РЅРµР»СЊР·СЏ РѕР±СЂР°С‚РЅРѕ РІС‹Р±СЂР°С‚СЊ trusted Рё intermid СЃРµСЂС‚РёС„РёРєР°С‚С‹)
 	 * @return
 	 * @throws CertPathValidatorException
 	 * @throws InvalidAlgorithmParameterException
@@ -287,10 +287,10 @@ public class CertificateVerifier {
 	}
 	
 	/**
-	 * Проверка сертификата в CRLDP не через CertPathValidator, а вручную в X509CRL. При этом проверяется CRL на дату актуальности и его подпись.
-	 * В этом методе из сертификата выделяются CRLDP и загружаются по сети. Далее они преобразуются в X509CRL и в нем уже проверяется на отозванность.
-	 * @param cert - сертификат для проверки.
-	 * @param certsForCRLSignatureValidation - сертификаты для проверки подписи самого CRL
+	 * РџСЂРѕРІРµСЂРєР° СЃРµСЂС‚РёС„РёРєР°С‚Р° РІ CRLDP РЅРµ С‡РµСЂРµР· CertPathValidator, Р° РІСЂСѓС‡РЅСѓСЋ РІ X509CRL. РџСЂРё СЌС‚РѕРј РїСЂРѕРІРµСЂСЏРµС‚СЃСЏ CRL РЅР° РґР°С‚Сѓ Р°РєС‚СѓР°Р»СЊРЅРѕСЃС‚Рё Рё РµРіРѕ РїРѕРґРїРёСЃСЊ.
+	 * Р’ СЌС‚РѕРј РјРµС‚РѕРґРµ РёР· СЃРµСЂС‚РёС„РёРєР°С‚Р° РІС‹РґРµР»СЏСЋС‚СЃСЏ CRLDP Рё Р·Р°РіСЂСѓР¶Р°СЋС‚СЃСЏ РїРѕ СЃРµС‚Рё. Р”Р°Р»РµРµ РѕРЅРё РїСЂРµРѕР±СЂР°Р·СѓСЋС‚СЃСЏ РІ X509CRL Рё РІ РЅРµРј СѓР¶Рµ РїСЂРѕРІРµСЂСЏРµС‚СЃСЏ РЅР° РѕС‚РѕР·РІР°РЅРЅРѕСЃС‚СЊ.
+	 * @param cert - СЃРµСЂС‚РёС„РёРєР°С‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё.
+	 * @param certsForCRLSignatureValidation - СЃРµСЂС‚РёС„РёРєР°С‚С‹ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРїРёСЃРё СЃР°РјРѕРіРѕ CRL
 	 * @return
 	 * @throws CertificateVerificationException
 	 */
@@ -328,7 +328,7 @@ public class CertificateVerifier {
 				// verify crl signature ------
 				Iterator<X509Certificate> certIterator = certsForCRLSignatureValidation.iterator();
 				List<X509Certificate> potencialCRLCerts = new ArrayList<X509Certificate>(5);
-				while (certIterator.hasNext()) { // лучше найти нужные сертификаты принципала, чем брутально перебирать верификацию для всех сертификатов
+				while (certIterator.hasNext()) { // Р»СѓС‡С€Рµ РЅР°Р№С‚Рё РЅСѓР¶РЅС‹Рµ СЃРµСЂС‚РёС„РёРєР°С‚С‹ РїСЂРёРЅС†РёРїР°Р»Р°, С‡РµРј Р±СЂСѓС‚Р°Р»СЊРЅРѕ РїРµСЂРµР±РёСЂР°С‚СЊ РІРµСЂРёС„РёРєР°С†РёСЋ РґР»СЏ РІСЃРµС… СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ
 					X509Certificate certIterated = certIterator.next();
 					if (certIterated.getSubjectDN().equals(crl.getIssuerDN())) {
 						potencialCRLCerts.add(certIterated);
@@ -365,11 +365,11 @@ public class CertificateVerifier {
 					}
 				}
 				//----------------------------
-				// а вот теперь проверка на отозванность сертификата
+				// Р° РІРѕС‚ С‚РµРїРµСЂСЊ РїСЂРѕРІРµСЂРєР° РЅР° РѕС‚РѕР·РІР°РЅРЅРѕСЃС‚СЊ СЃРµСЂС‚РёС„РёРєР°С‚Р°
 				if (crl.isRevoked(cert)) {
 					throw new CertificateVerificationException("The certificate is revoked by CRL: " + crlDPointURL);
 				} else {
-					break; // остановить цикл по CRL DP - мы уже проверили сертификат на отозванность.
+					break; // РѕСЃС‚Р°РЅРѕРІРёС‚СЊ С†РёРєР» РїРѕ CRL DP - РјС‹ СѓР¶Рµ РїСЂРѕРІРµСЂРёР»Рё СЃРµСЂС‚РёС„РёРєР°С‚ РЅР° РѕС‚РѕР·РІР°РЅРЅРѕСЃС‚СЊ.
 				}
 			}
 			if (!crldpURLaccepted) {
