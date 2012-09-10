@@ -50,6 +50,8 @@ import org.bouncycastle.asn1.x509.IssuingDistributionPoint;
  */
 public class PKIXUtils {
 
+	private static final String AUTHORITY_INFO_ACCESS_OID = "1.3.6.1.5.5.7.1.1";
+
 	private static final Logger LOG = Logger.getLogger(CertificateVerifier.class.getName());
 
 	private static final String COM_IBM_SECURITY_ENABLE_CRLDP = "com.ibm.security.enableCRLDP";
@@ -104,7 +106,7 @@ public class PKIXUtils {
 	 */
 	public static List<String> getAuthorityInformationAccess(X509Certificate cert) {
 		List<String> ocspLocationUrls = new ArrayList<String>();
-		byte[] value = cert.getExtensionValue("1.3.6.1.5.5.7.1.1");
+		byte[] value = cert.getExtensionValue(AUTHORITY_INFO_ACCESS_OID);
 		if (value == null) {
 			return ocspLocationUrls; // extension unavailable
 		}
