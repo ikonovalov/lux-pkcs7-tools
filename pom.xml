@@ -13,4 +13,7 @@
   		<version>1.46</version>
   	</dependency>
   </dependencies>
+  <name>Luxoft-PKCS7-tools</name>
+  <description>This project help me to solve problem deals with CryptoPro JCP on IBM J9.
+Main work and ides was done by Svetlin Nakov.</description>
 </project>
