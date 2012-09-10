@@ -145,6 +145,7 @@ public class PKIXUtils {
 		URL url = new URL(crlURL);
 		InputStream crlStream = url.openStream();
 		try {
+			// some comments
 			CertificateFactory cf = CertificateFactory.getInstance("X.509");
 			X509CRL crl = (X509CRL) cf.generateCRL(crlStream);
 			return crl;
