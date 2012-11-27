@@ -58,7 +58,7 @@ import ru.signalcom.crypto.cms.SignerInfo;
  * Примеры использования классов, реализующих протокол CMS (RFC 5652). (От себя: да ладно уж, знаем мы ваше RFC...)
  * Copyright (C) 2010 ЗАО "Сигнал-КОМ".
  */
-public final class SignalComCryptoUtils {
+public final class SignalComCryptoUtils implements CryptoUtils {
     
     private static String STORE_TYPE = "PKCS12";
     private static String CRYPTO_PROVIDER = "SC";
