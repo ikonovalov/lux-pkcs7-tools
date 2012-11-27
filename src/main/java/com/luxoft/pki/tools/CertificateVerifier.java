@@ -162,22 +162,24 @@ public class CertificateVerifier {
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
+			
+			boolean certHasOCSPUrls = getAuthorityInformationAccess(cert).size() > 0;
+			boolean certHasCRLDPUrls = getCrlDistributionPoints(cert).size() > 0;
+			
 			if (!isIBMJ9()) { // non-IBM VMs
-				if (isOCSPEnabled() || isSunCRLDPEnabled()) {
+				if ((isOCSPEnabled() || isSunCRLDPEnabled()) && (certHasOCSPUrls || certHasCRLDPUrls)) {
 					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts, provider);
+				} else {
+					LOG.warning("Certificate " + cert.getSubjectDN().getName() + " not verified. Either OCSP-CRLDP disabled or cert doesn't have appropriate URLs");
 				}
 			} else { // for IBM J9
-				boolean certHasOCSPUrls = getAuthorityInformationAccess(cert).size() > 0;
-				boolean certHasCRLDPUrls = getCrlDistributionPoints(cert).size() > 0;
-				if (isOCSPEnabled() && certHasOCSPUrls) {
+				if (isOCSPEnabled() && certHasOCSPUrls) { // Проверка осуществляется или в OCSP (приоритетно) или в CRLDP - оба не имеют смысла
 					if (LOG.isLoggable(Level.FINE)) {
-						LOG.log(Level.FINE, "Switch OCSP check to automatic mode for IBM VM.");
+						LOG.fine("Switch OCSP check to automatic mode for IBM VM.");
 					} 
 					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts, provider);
 				} else if (isIbmCRLDPEnabled() && certHasCRLDPUrls) {
-					if (LOG.isLoggable(Level.FINE)) {
-						LOG.log(Level.FINE, "Switch CRLDP check to manual mode for IBM VM. IBMs CRLDP enabled and certificate has CRLDP urls.");
-					} 
+					LOG.fine("Switch CRLDP check to manual mode for IBM VM. IBMs CRLDP enabled and certificate has CRLDP urls.");
 					validatedCertChain = verifyCertificateCRLsManually(cert, additionalCerts);
 				}
 				
@@ -219,7 +221,7 @@ public class CertificateVerifier {
 	 *             expired)
 	 */
 	private static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws GeneralSecurityException {
-
+		LOG.fine("Building cert chain for " + cert.getSubjectDN().getName());
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
 		selector.setCertificate(cert);
