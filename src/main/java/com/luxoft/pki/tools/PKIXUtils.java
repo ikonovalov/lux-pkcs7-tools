@@ -304,7 +304,9 @@ public class PKIXUtils {
 		enableCRLDP(false);
 	}
 
-	public static boolean isIBMJ9() {
-		return System.getProperty("java.vendor").toUpperCase().contains("IBM");
+	private static Boolean isIBMJ9 = null;
+	
+	public static synchronized boolean isIBMJ9() {
+		return (isIBMJ9 == null ? isIBMJ9 = System.getProperty("java.vendor").toUpperCase().contains("IBM") : isIBMJ9);
 	}
 }

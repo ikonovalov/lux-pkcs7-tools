@@ -17,6 +17,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertPathBuilderException;
@@ -60,7 +61,6 @@ public class CertificateVerifier {
 
 	private static final Logger LOG = Logger.getLogger(CertificateVerifier.class.getName());
 		
-	
 	/**
 	 * Построение цепочки сертификатов и их проверка в CRLDP и(или) OCSP
 	 * @param cert - проверяемый сертификат
@@ -70,7 +70,13 @@ public class CertificateVerifier {
 	 * @throws CertificateVerificationException
 	 */
 	public static CertificateVerificationResult verifyCertificate(X509Certificate cert, KeyStore keyStore, boolean allowSelfSigned) throws CertificateVerificationException {
+		return verifyCertificate(cert, keyStore, allowSelfSigned, null); // Using default crypto-provider (like SUN)
+	}
+	
+	
+	public static CertificateVerificationResult verifyCertificate(X509Certificate cert, KeyStore keyStore, boolean allowSelfSigned, String provider) throws CertificateVerificationException {
 		Set<X509Certificate> allStoredCerts = new HashSet<X509Certificate>();
+		// выборка всех сертификатов из хранилища
 		try {
 			Enumeration<String> aliases = keyStore.aliases();
 			while (aliases.hasMoreElements()) {
@@ -94,7 +100,7 @@ public class CertificateVerifier {
 			throw new CertificateVerificationException("Key store access problem.", e);
 		}
        
-        return verifyCertificate(cert, allStoredCerts, allowSelfSigned);
+        return verifyCertificate(cert, allStoredCerts, allowSelfSigned, provider);
 	}
 
 	
@@ -123,14 +129,14 @@ public class CertificateVerifier {
 	 *             path cannot be built or some certificate in the chain is
 	 *             expired or CRL checks are failed)
 	 */
-	public static CertificateVerificationResult verifyCertificate(X509Certificate cert, Set<X509Certificate> additionalCerts, boolean allowSelfSigned) throws CertificateVerificationException {
+	public static CertificateVerificationResult verifyCertificate(X509Certificate cert, Set<X509Certificate> additionalCerts, boolean allowSelfSigned, String provider) throws CertificateVerificationException {
 		try {
 			// check for valid date
 			chechValidDate(cert);
 			// Check for self-signed certificate
 			if (!allowSelfSigned && isSelfSigned(cert)) {
 				if (LOG.isLoggable(Level.FINE)) {
-					LOG.log(Level.FINE, "Certificate " + cert.getSubjectDN().getName() + " is self-signed and not allowed. Exception in air!");
+					LOG.log(Level.FINE, "Certificate " + cert.getSubjectDN().getName() + " is self-signed and not allowed. Exception in the air!");
 				}
 				throw new CertificateVerificationException("Self-signed certificates are not allowed.");
 			}
@@ -151,14 +157,14 @@ public class CertificateVerifier {
 			}
 			
 			// Attempt to build the certification chain
-			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts);
+			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
 
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
 			if (!isIBMJ9()) { // non-IBM VMs
 				if (isOCSPEnabled() || isSunCRLDPEnabled()) {
-					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts);
+					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts, provider);
 				}
 			} else { // for IBM J9
 				boolean certHasOCSPUrls = getAuthorityInformationAccess(cert).size() > 0;
@@ -167,7 +173,7 @@ public class CertificateVerifier {
 					if (LOG.isLoggable(Level.FINE)) {
 						LOG.log(Level.FINE, "Switch OCSP check to automatic mode for IBM VM.");
 					} 
-					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts);
+					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts, provider);
 				} else if (isIbmCRLDPEnabled() && certHasCRLDPUrls) {
 					if (LOG.isLoggable(Level.FINE)) {
 						LOG.log(Level.FINE, "Switch CRLDP check to manual mode for IBM VM. IBMs CRLDP enabled and certificate has CRLDP urls.");
@@ -212,7 +218,7 @@ public class CertificateVerifier {
 	 *             path cannot be built or some certificate in the chain is
 	 *             expired)
 	 */
-	private static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts) throws GeneralSecurityException {
+	private static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws GeneralSecurityException {
 
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
@@ -235,8 +241,11 @@ public class CertificateVerifier {
 		pkixParams.addCertStore(intermediateCertStore);
 
 		// Build and verify the certification chain
-		CertPathBuilder builder = CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX);
+		CertPathBuilder builder = (provider != null ? CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX, provider) : CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX));
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
+		if (LOG.isLoggable(Level.FINE)) {
+			LOG.fine("CertPathBuilder complited for " + cert.getSubjectDN().getName() + " using builder's provider: " + builder.getProvider().getName());
+		}
 		return result;
 	}
 	
@@ -250,8 +259,9 @@ public class CertificateVerifier {
 	 * @throws CertPathValidatorException
 	 * @throws InvalidAlgorithmParameterException
 	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchProviderException 
 	 */
-	private static CertPathValidatorResult verifyCertificateCRLsAutomatic(X509Certificate cert, CertPath certPath, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts) throws CertPathValidatorException, InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+	private static CertPathValidatorResult verifyCertificateCRLsAutomatic(X509Certificate cert, CertPath certPath, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws CertPathValidatorException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
@@ -270,10 +280,10 @@ public class CertificateVerifier {
 		pkixParams.setRevocationEnabled(true);
 		
 		// Specify a list of intermediate certificates
-		CertStore intermediateCertStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts));
+		CertStore intermediateCertStore = (provider != null ? CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts), provider) : CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts)));
 		pkixParams.addCertStore(intermediateCertStore);
 
-		final CertPathValidator validator = CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX);
+		final CertPathValidator validator = (provider != null ? CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX, provider) : CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX));
 		final CertPathValidatorResult validationResult = validator.validate(certPath, pkixParams);
 		return validationResult;
 	}

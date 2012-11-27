@@ -22,8 +22,8 @@ public class ValidatePathAndCRL {
 		
 		System.out.println(PKIXUtils.isIBMJ9());
 		
-		System.setProperty("http.proxyHost", "localhost");
-		System.setProperty("http.proxyPort", "9080");  
+		System.setProperty("http.proxyHost", "192.168.5.15");
+		System.setProperty("http.proxyPort", "8080");  
 		
 		System.setProperty("com.ibm.security.enableCRLDP", String.valueOf(true));
 		System.setProperty("com.sun.security.enableCRLDP", String.valueOf(true));
