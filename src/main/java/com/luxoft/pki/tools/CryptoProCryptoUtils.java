@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -16,7 +19,10 @@ import java.security.Signature;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -34,6 +40,7 @@ import com.objsys.asn1j.runtime.Asn1Null;
 import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
 import com.objsys.asn1j.runtime.Asn1OctetString;
 
+import ru.CryptoPro.Crypto.spec.GostCipherSpec;
 import ru.CryptoPro.JCP.JCP;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CMSVersion;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CertificateChoices;
@@ -77,6 +84,7 @@ import ru.CryptoPro.JCP.params.AlgIdInterface;
 import ru.CryptoPro.JCP.params.AlgIdSpec;
 import ru.CryptoPro.JCP.params.OID;
 import ru.CryptoPro.JCP.params.ParamsInterface;
+import ru.CryptoPro.JCP.ASN.CertificateExtensions.SubjectKeyIdentifier;
 
 /**
  * Если что-то непонятно, то лучше чем тут нигде http://www.ietf.org/rfc/rfc3852.txt
@@ -85,6 +93,8 @@ import ru.CryptoPro.JCP.params.ParamsInterface;
  */
 @SuppressWarnings("restriction")
 public class CryptoProCryptoUtils extends CryptoUtils {
+
+	public static final String SUBJECT_KEY_IDENTEFER_OID = "2.5.29.14";
 
 	public static final String ENVELOPED_DATA_OID = "1.2.840.113549.1.7.3";
 
@@ -127,9 +137,14 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 
 	private void init() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
 		KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
-		InputStream in = new FileInputStream(new File(storeFile));
-		keyStore.load(in, storePassword);
-		in.close();
+		if (this.storeFile != null) {
+			InputStream in = new FileInputStream(new File(storeFile));
+			keyStore.load(in, storePassword);
+			in.close();
+		} else {
+			LOG.warning("Loading without cert store...");
+			keyStore.load(null, null);
+		}
 		setKeyStore(keyStore);
 	}
 
@@ -168,7 +183,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	private X509Certificate addSignerToList(String alias) throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
-		PrivateKey priv = (PrivateKey) getKeyStore().getKey(alias, storePassword);
+		PrivateKey priv = getKeyFromStore(alias, storePassword);
 		X509Certificate cert = getCertificateFromStore(alias);
 		signers.add(new Signer(priv, cert));
 		return cert;
@@ -209,16 +224,6 @@ public class CryptoProCryptoUtils extends CryptoUtils {
     	}
     	return this;
 	}
-	
-	public byte[] decrypt(byte[] ciphertext) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public byte[] detach(byte[] signed) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	public byte[] encrypt(byte[] plain) throws Exception {
 		
@@ -243,8 +248,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 
 		// Зашифрование текста на симметричном ключе.
 		cipher.init(Cipher.ENCRYPT_MODE, simm, (SecureRandom) null);
-		final byte[] iv = cipher.getIV();
-		final byte[] text = cipher.doFinal(plain, 0, plain.length);
+		final byte[] initializationVector = cipher.getIV();
+		final byte[] enctryptedData = cipher.doFinal(plain, 0, plain.length);
 		
 		// выбор случайного отправителя из списка подписчиков
 		final Signer randomSigner = signers.get(new Random().nextInt(signers.size()));
@@ -252,13 +257,13 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		final int recipientListSize = recipients.size();
 		
 		// формирование CMS-сообщения
-		final EnvelopedData cms = new EnvelopedData();
+		final EnvelopedData envelopedData = new EnvelopedData();
 		
 		// EnvelopedData:version
-		cms.version = new CMSVersion(0);
+		envelopedData.version = new CMSVersion(0);
 		
 		// EnvelopedData:recipientInfos
-		cms.recipientInfos = new RecipientInfos(recipientListSize);
+		envelopedData.recipientInfos = new RecipientInfos(recipientListSize);
 		
 		for (int z = 0; z < recipientListSize; z++) { // заполняем RecipientInfo[]
 			final Recipient recipient = recipients.get(z);
@@ -272,7 +277,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			
 			// Начинаем формировать RecipientInfo
 			final RecipientInfo recipientInfo = new RecipientInfo();
-			cms.recipientInfos.elements[z] = recipientInfo;
+			envelopedData.recipientInfos.elements[z] = recipientInfo;
 			/*
 			 *  RecipientInfo ::= CHOICE {
              * 		ktri KeyTransRecipientInfo, -> KeyTransRecipientInfo ::= SEQUENCE {
@@ -343,19 +348,19 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		}
 		
 		// EnvelopedData:encryptedContentInfo
-		cms.encryptedContentInfo = new EncryptedContentInfo();
+		envelopedData.encryptedContentInfo = new EncryptedContentInfo();
 		final OID contentType = new OID("1.2.840.113549.1.7.1");
-		cms.encryptedContentInfo.contentType = new ContentType(contentType.value);
+		envelopedData.encryptedContentInfo.contentType = new ContentType(contentType.value);
 		final Gost28147_89_Parameters params = new Gost28147_89_Parameters();
-		params.iv = new Gost28147_89_IV(iv);
+		params.iv = new Gost28147_89_IV(initializationVector);
 		params.encryptionParamSet = new Gost28147_89_ParamSet(paramss.getOID().value);
-		cms.encryptedContentInfo.contentEncryptionAlgorithm = new ContentEncryptionAlgorithmIdentifier(_Gost28147_89_EncryptionSyntaxValues.id_Gost28147_89, params);
-		cms.encryptedContentInfo.encryptedContent = new EncryptedContent(text);
+		envelopedData.encryptedContentInfo.contentEncryptionAlgorithm = new ContentEncryptionAlgorithmIdentifier(_Gost28147_89_EncryptionSyntaxValues.id_Gost28147_89, params);
+		envelopedData.encryptedContentInfo.encryptedContent = new EncryptedContent(enctryptedData);
 		
 		// Помещаем во внешнюю оболочку
 		final ContentInfo contentInfo = new ContentInfo();
 		contentInfo.contentType = new Asn1ObjectIdentifier(new OID(ENVELOPED_DATA_OID).value);
-		contentInfo.content = cms;
+		contentInfo.content = envelopedData;
 		
 		final Asn1BerEncodeBuffer contentInfoEncodeBuffer = new Asn1BerEncodeBuffer();
 		contentInfo.encode(contentInfoEncodeBuffer);
@@ -469,6 +474,15 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		return simmetricKey;
 	}
 	
+	/**
+	 * Генерация ключа согласования по DH
+	 * @param senderKey - PrivateKey отправителя
+	 * @param responderPublic - PublicKey получателя
+	 * @return сгенерированный SecretKey по GOST28147
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws InvalidAlgorithmParameterException
+	 */
 	private SecretKey generateDHAgreementKey(PrivateKey senderKey, PublicKey responderPublic) throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
 		final KeyAgreement senderKeyAgree = KeyAgreement.getInstance(JCP.GOST_DH_NAME);
 		senderKeyAgree.init(senderKey, new IvParameterSpec(sv), null);
@@ -476,10 +490,141 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		final SecretKey secret = senderKeyAgree.generateSecret("GOST28147");
 		return secret;
 	}
+	
+	public byte[] decrypt(byte[] ciphertext) throws Exception {
+		//разбор CMS-сообщения
+	    Asn1BerDecodeBuffer dbuf = new Asn1BerDecodeBuffer(ciphertext);
+	    final ContentInfo all = new ContentInfo();
+	    all.decode(dbuf);
+	    dbuf.reset();
+	    final EnvelopedData cms = (EnvelopedData) all.content;
+	    
+	    RecipientInfo[] recipientInfos = cms.recipientInfos.elements;
+	    
+	    // Вращаем получателей
+	    for (RecipientInfo recipientInfo : recipientInfos) {
+	    	
+	    	KeyTransRecipientInfo keytrans = new KeyTransRecipientInfo();
+		    
+	    	if (recipientInfo.getChoiceID() == RecipientInfo._KTRI) {
+		        keytrans = (KeyTransRecipientInfo) recipientInfo.getElement();
+		    } else {
+		    	LOG.warning("RecipientInfo type unsupported. KeyTransRecipientInfo (ktri) supported only. RecipientInfo type is " + recipientInfo.getElemName());
+		    	continue;
+		    }
+		    
+		    // Идентификация получателя
+		    String recipientAliase = lookupKeyAlias(keytrans.rid);
+		    if (recipientAliase == null) {
+		    	LOG.warning("Skip RecipientInfo because RI in a keystore not found by SERIAL or SKI or unknown type -> " + keytrans.rid.getElemName());
+		    	continue;
+		    }
+		    
+		    PrivateKey recipientPrivateKey = getKeyFromStore(recipientAliase, storePassword);
+		    
+		    // разбор параметров ключа
+		    final Asn1BerEncodeBuffer ebuf = new Asn1BerEncodeBuffer();
+		    dbuf = new Asn1BerDecodeBuffer(keytrans.encryptedKey.value);
+		    
+		    final GostR3410_KeyTransport encrKey = new GostR3410_KeyTransport();
+		    encrKey.decode(dbuf);
+		    dbuf.reset();
+		    
+		    encrKey.sessionEncryptedKey.encode(ebuf);
+		    final byte[] wrapKey = ebuf.getMsgCopy();
+		    ebuf.reset();
+		    
+		    encrKey.transportParameters.ephemeralPublicKey.encode(ebuf);
+		    final byte[] encodedPub = ebuf.getMsgCopy();
+		    ebuf.reset();
+		    
+		    final byte[] sv = encrKey.transportParameters.ukm.value;
+		    final Gost28147_89_Parameters params = (Gost28147_89_Parameters) cms.encryptedContentInfo.contentEncryptionAlgorithm.parameters;
+		    final byte[] iv = params.iv.value;
+		    final OID cipherOID = new OID(params.encryptionParamSet.value);
+		    
+		    // зашифрованная нагрузка
+		    final byte[] encryptedData = cms.encryptedContentInfo.encryptedContent.value;
+		    
+		    //отправитель - открытый ключ из cms
+		    final X509EncodedKeySpec pspec = new X509EncodedKeySpec(encodedPub);
+		    final KeyFactory kf = KeyFactory.getInstance(JCP.GOST_DH_NAME);
+		    final PublicKey senderPublicKey = kf.generatePublic(pspec);
+		    
+		    // выработка ключа согласования получателем
+		    final KeyAgreement responderKeyAgree = KeyAgreement.getInstance(JCP.GOST_DH_NAME);
+		    responderKeyAgree.init(recipientPrivateKey, new IvParameterSpec(sv), null);
+		    responderKeyAgree.doPhase(senderPublicKey, true);
+		    final SecretKey agreemtntKey = responderKeyAgree.generateSecret("GOST28147");
+
+		    // Расшифрование симметричного ключа.
+		    final Cipher cipher = Cipher.getInstance(CIPHER_MODE);
+		    cipher.init(Cipher.UNWRAP_MODE, agreemtntKey, (SecureRandom) null);
+		    final SecretKey simmKey = (SecretKey) cipher.unwrap(wrapKey, null, Cipher.SECRET_KEY);
+		    
+		    // Расшифрование текста на симметричном ключе.
+		    final GostCipherSpec spec = new GostCipherSpec(iv, cipherOID);
+		    cipher.init(Cipher.DECRYPT_MODE, simmKey, spec, null); 
+		    byte[] result = cipher.doFinal(encryptedData, 0, encryptedData.length);
+		    return result;
+	    }
+		throw new GeneralSecurityException("Decription failed. No one suitable recipient.");
+	}
+	
+	/**
+	 * Поиск алиаса ключа (и сертификата) в хранилище по RecipientIdentifier.
+	 * Поиск производится по SERIAL или SKI в сертификатах + наличие по тому же алиасу ключа.
+	 * @param recipientIdentifier RecipientIdentifier
+	 * @return Алиас соответствующий сертификату по данным из RI. (Serial или SubjectKeyIdentefer(cert extension)). Или null если соответствующий сертификат не найден.
+	 * @throws RecipientIdentifierNotFound
+	 * @throws KeyStoreException 
+	 */
+	private String lookupKeyAlias(RecipientIdentifier recipientIdentifier) throws KeyStoreException {
+		String res = null;
+		if (recipientIdentifier.getChoiceID() == RecipientIdentifier._ISSUERANDSERIALNUMBER) {
+			IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) recipientIdentifier.getElement();
+			BigInteger serialNumber = issuerAndSerialNumber.serialNumber.value;
+			
+			Enumeration<String> aliasesEnum = getKeyStore().aliases();
+			while(aliasesEnum.hasMoreElements()) {
+				String currentAlias = aliasesEnum.nextElement();
+				X509Certificate cer = getCertificateFromStore(currentAlias);
+				if (cer.getSerialNumber().equals(serialNumber) && getKeyStore().isKeyEntry(currentAlias)) {
+					res = currentAlias;
+					break;
+				}
+			}
+			
+		} else if (recipientIdentifier.getChoiceID() == RecipientIdentifier._SUBJECTKEYIDENTIFIER) {
+			SubjectKeyIdentifier subjectKeyIdentifier = (SubjectKeyIdentifier) recipientIdentifier.getElement();
+			byte[] ski = subjectKeyIdentifier.value;
+			
+			Enumeration<String> aliasesEnum = getKeyStore().aliases();
+			while(aliasesEnum.hasMoreElements()) {
+				String currentAlias = aliasesEnum.nextElement();
+				X509Certificate cer = getCertificateFromStore(currentAlias);
+				byte[] currentSKI = cer.getExtensionValue(SUBJECT_KEY_IDENTEFER_OID);
+				if (Arrays.equals(ski, currentSKI) && getKeyStore().isKeyEntry(currentAlias)) {
+					res = currentAlias;
+					break;
+				}
+			}
+
+		} else {
+			LOG.warning("Unknown RecipientIdentifier type encounted. Type is " + recipientIdentifier.getElemName());
+		}
+		
+		return res;
+	}
 
 	public void verify(byte[] signed) throws Exception {
 		// TODO Auto-generated method stub
 
+	}
+
+	public byte[] detach(byte[] signed) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
