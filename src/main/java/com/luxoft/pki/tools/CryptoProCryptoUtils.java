@@ -617,14 +617,30 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		return res;
 	}
 
+	public byte[] detach(byte[] signed) throws Exception {
+		final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(signed);
+		final ContentInfo all = new ContentInfo();
+		all.decode(asnBuf);
+		
+		if (!new OID(SIGNED_DATA_OID).eq(all.contentType.value))
+			throw new Exception("Not supported contentType. SignedData supported only. OID = " + SIGNED_DATA_OID);
+		
+		final SignedData signedData = (SignedData) all.content;
+		
+		final byte[] payloadBytes;
+		if (signedData.encapContentInfo.eContent != null) {
+			payloadBytes = signedData.encapContentInfo.eContent.value;
+		} else {
+			payloadBytes = null;
+		}
+		return payloadBytes;
+	}
+	
 	public void verify(byte[] signed) throws Exception {
 		// TODO Auto-generated method stub
 
 	}
 
-	public byte[] detach(byte[] signed) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 
 }

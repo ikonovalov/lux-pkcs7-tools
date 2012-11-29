@@ -1,7 +1,5 @@
 package com.luxoft.pkcs7.cms.cryptopro;
 
-import java.util.Random;
-
 import ru.CryptoPro.JCP.params.AlgIdSpec;
 import ru.CryptoPro.JCP.tools.Array;
 
@@ -33,7 +31,8 @@ public class CryptoProDecryptAndCheck {
 		System.out.println(AlgIdSpec.getDefaultCryptParams() == AlgIdSpec.getDefaultCryptParams());
 		
 		byte[] decrypted = cputils.decrypt(encrypted);
-		System.out.println(new String(decrypted));
+		byte[] detached = cputils.detach(decrypted);
+		System.out.println(new String(detached));
 	}
 
 }
