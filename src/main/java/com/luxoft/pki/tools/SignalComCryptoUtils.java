@@ -58,12 +58,11 @@ import ru.signalcom.crypto.cms.SignerInfo;
  * Примеры использования классов, реализующих протокол CMS (RFC 5652). (От себя: да ладно уж, знаем мы ваше RFC...)
  * Copyright (C) 2010 ЗАО "Сигнал-КОМ".
  */
-public final class SignalComCryptoUtils implements CryptoUtils {
+public final class SignalComCryptoUtils extends CryptoUtils {
     
     private static String STORE_TYPE = "PKCS12";
     private static String CRYPTO_PROVIDER = "SC";
     
-    private KeyStore keyStore;
     private final String psePath;
     private final String storeFile;
     private final char[] storePassword;
@@ -116,7 +115,7 @@ public final class SignalComCryptoUtils implements CryptoUtils {
     		return this;
     	}
     	for (String signer : signerAliases) {
-    		if (keyStore.isKeyEntry(signer)) {
+    		if (getKeyStore().isKeyEntry(signer)) {
     			addSignerToList(signer);
     		} else {
     			LOG.warning("Alias " + signer + " doesn't have private key and can't be a signer");
@@ -150,12 +149,15 @@ public final class SignalComCryptoUtils implements CryptoUtils {
     	LOG.fine("RNG initialization...");
         random = SecureRandom.getInstance("GOST28147PRNG", "SC");
         random.setSeed(psePath.getBytes());
+        
+        KeyStore keyStore = null;
 
         LOG.fine("Key store loading...");
         keyStore = KeyStore.getInstance(STORE_TYPE, CRYPTO_PROVIDER);
         InputStream in = new FileInputStream(new File(storeFile));
         keyStore.load(in, storePassword);
         in.close();
+        setKeyStore(keyStore);
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
         Enumeration<String> aliases = keyStore.aliases();
@@ -184,7 +186,7 @@ public final class SignalComCryptoUtils implements CryptoUtils {
      * @throws UnrecoverableKeyException
      */
 	private X509Certificate addSignerToList(String alias) throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
-		PrivateKey priv = (PrivateKey) keyStore.getKey(alias, storePassword);
+		PrivateKey priv = (PrivateKey) getKeyStore().getKey(alias, storePassword);
 		X509Certificate cert = getCertificateFromStore(alias);
 		signers.add(new Signer(priv, cert, random));
 		return cert;
@@ -194,10 +196,6 @@ public final class SignalComCryptoUtils implements CryptoUtils {
 		X509Certificate cert = getCertificateFromStore(recipient);
 		recipients.add(new Recipient(cert));
 		return cert;
-	}
-
-	private X509Certificate getCertificateFromStore(String alias) throws KeyStoreException {
-		return (X509Certificate) keyStore.getCertificate(alias);
 	}
 
     /**
@@ -360,11 +358,8 @@ public final class SignalComCryptoUtils implements CryptoUtils {
         }
 
         //verifyCertificate(cert, trust, stores);
-        System.out.println("-------------------------------------\n\n");
-        CertificateVerifier.verifyCertificate(cert, keyStore, true, "SC");
-        System.out.println("\n\n-------------------------------------");
+        CertificateVerifier.verifyCertificate(cert, getKeyStore(), true, "SC");
         
-
         @SuppressWarnings("unchecked")
         Collection<Attribute> attrs = signerInfo.getUnsignedAttributes();
         if (!attrs.isEmpty()) {
@@ -489,12 +484,12 @@ public final class SignalComCryptoUtils implements CryptoUtils {
         @SuppressWarnings("unchecked")
 		Collection<RecipientInfo> recInfos = parser.getRecipientInfos();
         Iterator<RecipientInfo> it = recInfos.iterator();
+        KeyStore keyStore = getKeyStore();
         while (it.hasNext()) {
             RecipientInfo recInfo = (RecipientInfo) it.next();
             X509Certificate cert = lookupCertificate(certStores, recInfo.getIssuer(), recInfo.getSerialNumber());
             if (cert != null) {
-                PrivateKey priv =
-                        (PrivateKey) keyStore.getKey(keyStore.getCertificateAlias(cert), storePassword);
+                PrivateKey priv = (PrivateKey) keyStore.getKey(keyStore.getCertificateAlias(cert), storePassword);
                 if (priv != null) {
                     InputStream content = recInfo.getEncryptedContent(priv, random);
                     ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -513,79 +508,4 @@ public final class SignalComCryptoUtils implements CryptoUtils {
         }
         throw new RuntimeException("recipient's private key not found");
     }
-
-    /*
-    public static void main(String[] args) {
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].compareToIgnoreCase("-storeFile") == 0) {
-                if (i < args.length) {
-                    storeFile = args[++i];
-                }
-            } else if (args[i].compareToIgnoreCase("-storeType") == 0) {
-                if (i < args.length) {
-                    STORE_TYPE = args[++i];
-                }
-            } else if (args[i].compareToIgnoreCase("-storeProvider") == 0) {
-                if (i < args.length) {
-                    CRYPTO_PROVIDER = args[++i];
-                }
-            } else if (args[i].compareToIgnoreCase("-storePassword") == 0) {
-                if (i < args.length) {
-                    storePassword = args[++i].toCharArray();
-                }
-            } else if (args[i].compareToIgnoreCase("-psePath") == 0) {
-                if (i < args.length) {
-                    psePath = args[++i];
-                }
-            } else if (args[i].compareToIgnoreCase("-crlsFile") == 0) {
-                if (i < args.length) {
-                    crlsFile = args[++i];
-                }
-            }
-        }
-
-        try {
-            Security.addProvider(new SignalCOMProvider());
-            System.out.println(new ProductInfo());
-
-            SignalComCryptoUtils test = new SignalComCryptoUtils();
-            test.init();
-
-            byte[] plaintext = "Test message".getBytes();
-
-            // Отсоединённая подпись
-            byte[] signed = test.sign(plaintext, true);
-            // Проверка отсоединённой подписи
-            test.verify(signed, plaintext);
-
-            // Подпись с инкапсуляцией данных
-            signed = test.sign(plaintext);
-            // Добавление удостоверяющей подписи
-            signed = test.countersign(signed);
-
-            // Зашифрование подписанного сообщения
-            byte[] enciphered = test.encrypt(signed);
-            // Расшифрование подписанного сообщения
-            byte[] deciphered = test.decrypt(enciphered);
-
-            // Проверка подписанного сообщения
-            test.verify(deciphered);
-            // Извлечение данных из подписанного сообщения
-            byte[] data = test.detach(deciphered);
-
-            // Проверка соответствия
-            if (!Arrays.equals(plaintext, data)) {
-                throw new RuntimeException("plaintext and detached data mismatch");
-            }
-
-            System.out.println("All tests passed");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            Security.removeProvider("SC");
-        }
-    }
-    */
 }
