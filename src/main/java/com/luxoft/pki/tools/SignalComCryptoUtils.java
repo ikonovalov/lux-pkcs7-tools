@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -166,7 +167,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
             System.out.println("I got alias: " + alias);
             if (keyStore.isCertificateEntry(alias)) { // Все сертификаты не в цепочках ключей добавляем в trusted
                 X509Certificate cert = getCertificateFromStore(alias);
-                trust.add(new TrustAnchor(cert, null));
+                trust.add(new TrustAnchor(cert, null)); /* TODO Этот момент нужно уточнить */
                 System.out.println("\talias '" + alias + "' moves to trusted ");
             } else if (keyStore.isKeyEntry(alias)) {
             	X509Certificate cert = getCertificateFromStore(alias);
@@ -174,7 +175,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
                 certs.add(cert);
             }
         }
-        certStores.add(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certs)));
+        certStores.add(createCertStoreFromList(certs));
     }
 
     /**
@@ -281,31 +282,6 @@ public final class SignalComCryptoUtils extends CryptoUtils {
     }
 
     /**
-     * Поиск сертификата.
-     * @param stores хранилища сертификатов.
-     * @param issuer имя издателя.
-     * @param serial серийный номер.
-     * @return сертификат.
-     * @throws CertStoreException
-     */
-    private X509Certificate lookupCertificate(List<CertStore> stores, X500Principal issuer, BigInteger serial) throws CertStoreException {
-
-        X509CertSelector csel = new X509CertSelector();
-        csel.setIssuer(issuer);
-        csel.setSerialNumber(serial);
-
-        Iterator<CertStore> it = stores.iterator();
-        while (it.hasNext()) {
-            CertStore store = it.next();
-            Collection col = store.getCertificates(csel);
-            if (!col.isEmpty()) {
-                return (X509Certificate) col.iterator().next();
-            }
-        }
-        throw new CertStoreException("certificate not found");
-    }
-
-    /**
      * Пример проверки сертификата.
      * @param cert сертификат.
      * @param trust список доверенных сертификатов.
@@ -347,7 +323,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
      */
     private void verifySignerInfo(SignerInfo signerInfo, Set<TrustAnchor> trust, List<CertStore> stores) throws Exception {
 
-        X509Certificate cert = lookupCertificate(stores, signerInfo.getIssuer(), signerInfo.getSerialNumber());
+        X509Certificate cert = lookupCertificateBySerialNumber(stores, signerInfo.getIssuer(), signerInfo.getSerialNumber());
         
         if (LOG.isLoggable(Level.FINE)) {
         	LOG.fine("Signature " + cert.getSubjectDN().getName() + " verifying...");
@@ -487,7 +463,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         KeyStore keyStore = getKeyStore();
         while (it.hasNext()) {
             RecipientInfo recInfo = (RecipientInfo) it.next();
-            X509Certificate cert = lookupCertificate(certStores, recInfo.getIssuer(), recInfo.getSerialNumber());
+            X509Certificate cert = lookupCertificateBySerialNumber(certStores, recInfo.getIssuer(), recInfo.getSerialNumber());
             if (cert != null) {
                 PrivateKey priv = (PrivateKey) keyStore.getKey(keyStore.getCertificateAlias(cert), storePassword);
                 if (priv != null) {

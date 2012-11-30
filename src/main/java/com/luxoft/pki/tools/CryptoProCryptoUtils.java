@@ -16,15 +16,17 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
@@ -34,14 +36,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.security.auth.x500.X500Principal;
 
-import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
-import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
-import com.objsys.asn1j.runtime.Asn1Null;
-import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
-import com.objsys.asn1j.runtime.Asn1OctetString;
-
 import ru.CryptoPro.Crypto.spec.GostCipherSpec;
 import ru.CryptoPro.JCP.JCP;
+import ru.CryptoPro.JCP.ASN.CertificateExtensions.SubjectKeyIdentifier;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CMSVersion;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CertificateChoices;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CertificateSet;
@@ -84,7 +81,13 @@ import ru.CryptoPro.JCP.params.AlgIdInterface;
 import ru.CryptoPro.JCP.params.AlgIdSpec;
 import ru.CryptoPro.JCP.params.OID;
 import ru.CryptoPro.JCP.params.ParamsInterface;
-import ru.CryptoPro.JCP.ASN.CertificateExtensions.SubjectKeyIdentifier;
+
+import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
+import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
+import com.objsys.asn1j.runtime.Asn1Exception;
+import com.objsys.asn1j.runtime.Asn1Null;
+import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
+import com.objsys.asn1j.runtime.Asn1OctetString;
 
 /**
  * Если что-то непонятно, то лучше чем тут нигде http://www.ietf.org/rfc/rfc3852.txt
@@ -93,8 +96,6 @@ import ru.CryptoPro.JCP.ASN.CertificateExtensions.SubjectKeyIdentifier;
  */
 @SuppressWarnings("restriction")
 public class CryptoProCryptoUtils extends CryptoUtils {
-
-	public static final String SUBJECT_KEY_IDENTEFER_OID = "2.5.29.14";
 
 	public static final String ENVELOPED_DATA_OID = "1.2.840.113549.1.7.3";
 
@@ -392,9 +393,9 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		// digestAlgorithms
 		signedData.digestAlgorithms = new DigestAlgorithmIdentifiers(signerListSize);
 		for (int z = 0; z < signerListSize; z++) {
-			final DigestAlgorithmIdentifier a = new DigestAlgorithmIdentifier(new OID(JCP.GOST_DIGEST_OID).value);
-			a.parameters = new Asn1Null();
-			signedData.digestAlgorithms.elements[z] = a;
+			final DigestAlgorithmIdentifier digistAlgIdentefer = new DigestAlgorithmIdentifier(new OID(JCP.GOST_DIGEST_OID).value);
+			digistAlgIdentefer.parameters = new Asn1Null();
+			signedData.digestAlgorithms.elements[z] = digistAlgIdentefer;
 		}
 		
 		// encapContentInfo
@@ -572,6 +573,30 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	/**
+	 * Поиск алиаса в хранилище (keyStore) по SignerIdentifier
+	 * @param signerIdentifier
+	 * @return null - если сертификат не найден в хранилище
+	 * @throws KeyStoreException
+	 */
+	private String lookupKeyAlias(SignerIdentifier signerIdentifier) throws KeyStoreException {
+		String res = null;
+		if (signerIdentifier.getChoiceID() == SignerIdentifier._ISSUERANDSERIALNUMBER) {
+			IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) signerIdentifier.getElement();
+			BigInteger serialNumber = issuerAndSerialNumber.serialNumber.value;
+			res = lookupKeyStoreBySerialNumber(serialNumber);
+			
+		} else if (signerIdentifier.getChoiceID() == SignerIdentifier._SUBJECTKEYIDENTIFIER) {
+			SubjectKeyIdentifier subjectKeyIdentifier = (SubjectKeyIdentifier) signerIdentifier.getElement();
+			byte[] ski = subjectKeyIdentifier.value;
+			res = lookupKeyStoreBySubjectKeyIdentefer(ski);
+			
+		} else {
+			LOG.warning("Unknown SignerIdentifier type encounted. Type is " + signerIdentifier.getElemName());
+		}
+		return res;
+	}
+	
+	/**
 	 * Поиск алиаса ключа (и сертификата) в хранилище по RecipientIdentifier.
 	 * Поиск производится по SERIAL или SKI в сертификатах + наличие по тому же алиасу ключа.
 	 * @param recipientIdentifier RecipientIdentifier
@@ -584,32 +609,13 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		if (recipientIdentifier.getChoiceID() == RecipientIdentifier._ISSUERANDSERIALNUMBER) {
 			IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) recipientIdentifier.getElement();
 			BigInteger serialNumber = issuerAndSerialNumber.serialNumber.value;
-			
-			Enumeration<String> aliasesEnum = getKeyStore().aliases();
-			while(aliasesEnum.hasMoreElements()) {
-				String currentAlias = aliasesEnum.nextElement();
-				X509Certificate cer = getCertificateFromStore(currentAlias);
-				if (cer.getSerialNumber().equals(serialNumber) && getKeyStore().isKeyEntry(currentAlias)) {
-					res = currentAlias;
-					break;
-				}
-			}
+			res = lookupKeyStoreBySerialNumber(serialNumber);
 			
 		} else if (recipientIdentifier.getChoiceID() == RecipientIdentifier._SUBJECTKEYIDENTIFIER) {
 			SubjectKeyIdentifier subjectKeyIdentifier = (SubjectKeyIdentifier) recipientIdentifier.getElement();
 			byte[] ski = subjectKeyIdentifier.value;
+			res = lookupKeyStoreBySubjectKeyIdentefer(ski);
 			
-			Enumeration<String> aliasesEnum = getKeyStore().aliases();
-			while(aliasesEnum.hasMoreElements()) {
-				String currentAlias = aliasesEnum.nextElement();
-				X509Certificate cer = getCertificateFromStore(currentAlias);
-				byte[] currentSKI = cer.getExtensionValue(SUBJECT_KEY_IDENTEFER_OID);
-				if (Arrays.equals(ski, currentSKI) && getKeyStore().isKeyEntry(currentAlias)) {
-					res = currentAlias;
-					break;
-				}
-			}
-
 		} else {
 			LOG.warning("Unknown RecipientIdentifier type encounted. Type is " + recipientIdentifier.getElemName());
 		}
@@ -617,7 +623,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		return res;
 	}
 
-	public byte[] detach(byte[] signed) throws Exception {
+	public byte[] detach(final byte[] signed) throws Exception {
 		final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(signed);
 		final ContentInfo all = new ContentInfo();
 		all.decode(asnBuf);
@@ -637,10 +643,128 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	public void verify(byte[] signed) throws Exception {
-		// TODO Auto-generated method stub
+		final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(signed);
+		final ContentInfo all = new ContentInfo();
+		all.decode(asnBuf);
+		
+		final SignedData signedData = (SignedData) all.content;
+		
+		// encapContentInfo ~ getting payload
+		final byte[] payloadBytes;
+		if (signedData.encapContentInfo.eContent != null)
+			payloadBytes = signedData.encapContentInfo.eContent.value;
+		else 
+			throw new Exception("No content for verify");
+		
+		// digestAlgorithms - scanning... 
+		OID digestOid = null;
+		final DigestAlgorithmIdentifier digestAlgorithmIdentifier = new DigestAlgorithmIdentifier(new OID(JCP.GOST_DIGEST_OID).value);
+		for (int i = 0; i < signedData.digestAlgorithms.elements.length; i++) {
+			if (signedData.digestAlgorithms.elements[i].algorithm.equals(digestAlgorithmIdentifier.algorithm)) {
+				digestOid = new OID(signedData.digestAlgorithms.elements[i].algorithm.value);
+				break;
+			}
+		}
+		/*
+		 * Из RFC 3852
+		 * Implementations MAY fail to validate signatures that use a digest
+		 * algorithm that is not included in this set.  The message digesting
+		 * process is described in Section 5.4.
+		 */
+		if (digestOid == null && signedData.digestAlgorithms.elements != null && signedData.digestAlgorithms.elements.length > 0) {
+			throw new Exception("Encountered unknown digest OID");
+		}
+		
+		// certificates
+		List<X509Certificate> signedDataCertificatesList = new ArrayList<X509Certificate>();
+		for (int i = 0; i < signedData.certificates.elements.length; i++) {
+			final Asn1BerEncodeBuffer encBuf = new Asn1BerEncodeBuffer();
+			signedData.certificates.elements[i].encode(encBuf);
+
+			final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+			final X509Certificate cert = (X509Certificate) cf.generateCertificate(encBuf.getInputStream());
+			signedDataCertificatesList.add(cert);
+		}
+		
+		// Сертификаты из SignedData
+		CertStore signedDataCertificates = createCertStoreFromList(signedDataCertificatesList);
+		List<CertStore> certificates = new ArrayList<CertStore>();
+		certificates.add(signedDataCertificates);
+		
+		
+		final OID eContTypeOID = new OID(signedData.encapContentInfo.eContentType.value);
+		
+		// Вращаем подписчиков
+		SignerInfo[] signerInfos = signedData.signerInfos.elements;
+		for (int z = 0; z < signerInfos.length; z++) {
+			SignerInfo signerInfo = signerInfos[z];
+			SignerIdentifier sid = signerInfo.sid;
+			
+			X509Certificate cert = null;
+
+			if (!isFlasSet(STORED_CERT_ONLY)) { // только если есть проверка на вложеных сертификатах разрешена
+				// пробуем найти нужный сертификат во входящих сертификатах (по IssuerAndSerialNumber или SubjectKeyIdentifier)
+				if (sid.getChoiceID() == SignerIdentifier._ISSUERANDSERIALNUMBER) {
+					IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) sid.getElement();
+					BigInteger serialNumber = issuerAndSerialNumber.serialNumber.value;				
+					X500Principal x500Principal = encodeX500Principal(issuerAndSerialNumber.issuer);
+					cert = lookupCertificateBySerialNumber(certificates, x500Principal, serialNumber);
+					
+				} else if (sid.getChoiceID() == SignerIdentifier._SUBJECTKEYIDENTIFIER) {
+					SubjectKeyIdentifier subjectKeyIdentifier = (SubjectKeyIdentifier) sid.getElement();
+					byte[] ski = subjectKeyIdentifier.value;
+					cert = lookupCertificateBySubjectKeyIdentefer(certificates, ski);
+				}
+				
+				if (cert != null && LOG.isLoggable(Level.FINE)) {
+					LOG.fine("Certificate found in SignedData for " + signerIdentifierToString(sid));
+				}
+			}
+			
+			
+			if (cert == null) { // если сертификат не найден во входящих, то ищем в хранилище.
+				cert = getCertificateFromStore(lookupKeyAlias(sid));
+				if (cert != null && LOG.isLoggable(Level.FINE)) {
+					LOG.fine("Certificate found in KeyStore for " + signerIdentifierToString(sid));
+				}
+			}
+			
+			
+			if (cert == null) { // сертификат не найден ни в хранилище, ни во входящих... отказать в верификации
+				throw new SignatureException(signerIdentifierToString(sid) + " certificate not found neither in SignedData nor in specified KeyStore");
+			}
+			
+			
+			byte[] data = null;
+			if (signerInfo.signedAttrs == null) { // аттрибуты подписи не присутствуют -> данные для проверки подписи
+				data = payloadBytes;
+			} else {
+				/* TODO Обработка атрибутов подписи */
+			}
+			
+			// собственно сама подпись
+			final byte[] sign = signerInfo.signature.value;
+			
+			boolean signatureValid = verifySignature(cert, sign, data);
+			if (LOG.isLoggable(Level.FINE)) {
+				LOG.fine("Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValid);
+			}
+		}
 
 	}
 
+	private X500Principal encodeX500Principal(Name issuerName) throws Asn1Exception {
+		final Asn1BerEncodeBuffer encBuf = new Asn1BerEncodeBuffer();
+		issuerName.encode(encBuf);				
+		X500Principal x500Principal = new X500Principal(encBuf.getMsgCopy());
+		return x500Principal;
+	}
 	
+	private static boolean verifySignature(X509Certificate cert, byte[] sign, byte[] text) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		final Signature signature = Signature.getInstance(JCP.GOST_EL_SIGN_NAME);
+		signature.initVerify(cert);
+		signature.update(text);
+		return signature.verify(sign);
+	}
 
 }
