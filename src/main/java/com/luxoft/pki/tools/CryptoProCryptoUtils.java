@@ -531,10 +531,12 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		    encrKey.decode(dbuf);
 		    dbuf.reset();
 		    
+		    // sessionEncryptedKey
 		    encrKey.sessionEncryptedKey.encode(ebuf);
 		    final byte[] wrapKey = ebuf.getMsgCopy();
 		    ebuf.reset();
 		    
+		    // ephemeralPublicKey
 		    encrKey.transportParameters.ephemeralPublicKey.encode(ebuf);
 		    final byte[] encodedPub = ebuf.getMsgCopy();
 		    ebuf.reset();
@@ -695,13 +697,17 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		
 		// Вращаем подписчиков
 		SignerInfo[] signerInfos = signedData.signerInfos.elements;
-		for (int z = 0; z < signerInfos.length; z++) {
+		
+		boolean signatureValidated = false; // читаем что достаточно одной верной подписи
+		
+		for (int z = 0; z < signerInfos.length && !signatureValidated; z++) {
 			SignerInfo signerInfo = signerInfos[z];
 			SignerIdentifier sid = signerInfo.sid;
 			
+			// если попался дайджест с неизвестным OID-ом, то в верификации отказываем
 			OID siDigestAlgOID = new OID(signerInfo.digestAlgorithm.algorithm.value);
-			if (!gostDigestOid.equals(siDigestAlgOID)) {
-				throw new SignatureException("Unknown digist algorithm in " + signerIdentifierToString(sid) + ". Algorithm name is " + siDigestAlgOID.toString());
+			if (!gostDigestOid.equals(siDigestAlgOID)) { 
+				throw new SignatureException("Unknown digist algorithm in " + signerIdentifierToString(sid) + ". Algorithm name is " + siDigestAlgOID.toString() + " but supported only " + gostDigestOid.toString());
 			}
 			
 			X509Certificate cert = null;
@@ -726,7 +732,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			}
 			
 			
-			if (cert == null) { // если сертификат не найден во входящих, то ищем в хранилище.
+			if (cert == null) { // если сертификат не найден во входящих, то ищем в хранилище. (это при условии что не стоит флаг "проверять только из хранилища" = OPT_STORED_CERT_ONLY)
 				cert = getCertificateFromStore(lookupKeyAlias(sid));
 				if (cert != null && LOG.isLoggable(Level.FINE)) {
 					LOG.fine("Certificate found in KeyStore for " + signerIdentifierToString(sid));
@@ -734,8 +740,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			}
 			
 			
-			if (cert == null) { // сертификат не найден ни в хранилище, ни во входящих... отказать в верификации
-				throw new SignatureException(signerIdentifierToString(sid) + " certificate not found neither in SignedData nor in specified KeyStore");
+			if (cert == null) { // если подходящего сертификата не нашлось, то переходим к другому подписанту
+				continue;
 			}
 			
 			
@@ -750,14 +756,18 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			final byte[] sign = signerInfo.signature.value;
 			
 			// ... и проверка подписи
-			boolean signatureValid = verifySignature(cert, sign, data);
-			String resMsg = "Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValid;
+			signatureValidated = verifySignature(cert, sign, data);
+			String resMsg = "Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValidated;
 			if (LOG.isLoggable(Level.FINE)) {
 				LOG.fine(resMsg);
 			}
-			if (!signatureValid) { // если подпись не сходится, то выбрасываемся
+			if (!signatureValidated) { // если подпись не сходится, то выбрасываемся
 				throw new SignatureException("Signature verification failed. " + resMsg);
 			}
+		}
+		
+		if (!signatureValidated) { // если ни одна из подписей не смогла пройти проверку по той или иной причине
+			throw new SignatureException("0/" + signerInfos.length + " valid signature");
 		}
 
 	}
