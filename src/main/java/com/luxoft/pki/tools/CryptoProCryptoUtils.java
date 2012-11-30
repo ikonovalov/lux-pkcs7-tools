@@ -1,16 +1,20 @@
 package com.luxoft.pki.tools;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.security.DigestException;
+import java.security.DigestInputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -72,6 +76,7 @@ import ru.CryptoPro.JCP.ASN.Gost28147_89_EncryptionSyntax._Gost28147_89_Encrypti
 import ru.CryptoPro.JCP.ASN.GostR3410_EncryptionSyntax.GostR3410_KeyTransport;
 import ru.CryptoPro.JCP.ASN.GostR3410_EncryptionSyntax.GostR3410_TransportParameters;
 import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.AlgorithmIdentifier;
+import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.Attribute;
 import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.Certificate;
 import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.CertificateSerialNumber;
 import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.Name;
@@ -81,6 +86,7 @@ import ru.CryptoPro.JCP.params.AlgIdInterface;
 import ru.CryptoPro.JCP.params.AlgIdSpec;
 import ru.CryptoPro.JCP.params.OID;
 import ru.CryptoPro.JCP.params.ParamsInterface;
+import ru.CryptoPro.JCP.tools.Array;
 
 import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
 import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
@@ -88,6 +94,7 @@ import com.objsys.asn1j.runtime.Asn1Exception;
 import com.objsys.asn1j.runtime.Asn1Null;
 import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
 import com.objsys.asn1j.runtime.Asn1OctetString;
+import com.objsys.asn1j.runtime.Asn1Type;
 
 /**
  * Если что-то непонятно, то лучше чем тут нигде http://www.ietf.org/rfc/rfc3852.txt
@@ -106,6 +113,12 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	public static final String ENCAP_CONTENT_INDO_OID = "1.2.840.113549.1.7.1";
 	
 	public static final String SIGNED_DATA_OID = "1.2.840.113549.1.7.2";
+	
+	public static final String STR_CMS_OID_CONT_TYP_ATTR = "1.2.840.113549.1.9.3";
+	
+	public static final String STR_CMS_OID_DIGEST_ATTR = "1.2.840.113549.1.9.4";
+	
+	public static final String STR_CMS_OID_SIGN_TYM_ATTR = "1.2.840.113549.1.9.5";
 	
 	public static final String GOST28147_ALG = "GOST28147";
 	
@@ -660,7 +673,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		else 
 			throw new Exception("No content for verify");
 		
-		// digestAlgorithms - scanning... 
+		// digestAlgorithms - scanning... нужно найти хотябы одину подходящую подпись для проверки
 		OID gostDigestOid = null;
 		final DigestAlgorithmIdentifier digestAlgorithmIdentifier = new DigestAlgorithmIdentifier(new OID(JCP.GOST_DIGEST_OID).value);
 		for (int i = 0; i < signedData.digestAlgorithms.elements.length; i++) {
@@ -676,7 +689,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		 * process is described in Section 5.4.
 		 */
 		if (gostDigestOid == null && signedData.digestAlgorithms.elements != null && signedData.digestAlgorithms.elements.length > 0) {
-			throw new Exception(JCP.GOST_DIGEST_OID + " (GOST_DIGEST_OID) not found in SignedData");
+			throw new DigestException(JCP.GOST_DIGEST_OID + " (GOST_DIGEST_OID) not found in SignedData");
 		}
 		
 		// certificates
@@ -698,7 +711,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		// Вращаем подписчиков
 		SignerInfo[] signerInfos = signedData.signerInfos.elements;
 		
-		boolean signatureValidated = false; // читаем что достаточно одной верной подписи
+		boolean signatureValidated = false; // читаем, что достаточно одной верной подписи
 		
 		for (int z = 0; z < signerInfos.length && !signatureValidated; z++) {
 			SignerInfo signerInfo = signerInfos[z];
@@ -749,7 +762,76 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			if (signerInfo.signedAttrs == null) { // аттрибуты подписи не присутствуют -> данные для проверки подписи
 				data = payloadBytes;
 			} else {
-				/* TODO Обработка атрибутов подписи */
+				//присутствуют аттрибуты подписи (SignedAttr)
+		        final Attribute[] signAttrElem = signerInfo.signedAttrs.elements;
+
+		        //проверка аттрибута content-type
+		        final Asn1ObjectIdentifier contentTypeOid = new Asn1ObjectIdentifier(
+		                (new OID(STR_CMS_OID_CONT_TYP_ATTR)).value);
+		        Attribute contentTypeAttr = null;
+
+		        for (int r = 0; r < signAttrElem.length; r++) {
+		            final Asn1ObjectIdentifier oid = signAttrElem[r].type;
+		            if (oid.equals(contentTypeOid)) {
+		                contentTypeAttr = signAttrElem[r];
+		            }
+		        }
+
+		        if (contentTypeAttr == null) {
+		            throw new Exception("content-type attribute not present");
+		        }
+
+		        if (!contentTypeAttr.values.elements[0].equals(new Asn1ObjectIdentifier(eContTypeOID.value))) {
+		            throw new Exception("content-type attribute OID not equal eContentType OID");
+		        }
+
+		        //проверка аттрибута message-digest
+		        final Asn1ObjectIdentifier messageDigestOid = new Asn1ObjectIdentifier((new OID(STR_CMS_OID_DIGEST_ATTR)).value);
+
+		        Attribute messageDigestAttr = null;
+
+		        for (int r = 0; r < signAttrElem.length; r++) {
+		            final Asn1ObjectIdentifier oid = signAttrElem[r].type;
+		            if (oid.equals(messageDigestOid)) {
+		                messageDigestAttr = signAttrElem[r];
+		            }
+		        }
+
+		        if (messageDigestAttr == null)
+		            throw new Exception("Message-digest attribute not present");
+
+		        final Asn1Type open = messageDigestAttr.values.elements[0];
+		        final Asn1OctetString hash = (Asn1OctetString) open;
+		        final byte[] md = hash.value;
+
+		        //вычисление messageDigest
+		        final byte[] dm = digestm(payloadBytes, JCP.GOST_DIGEST_NAME);
+
+		        if (!Array.toHexString(dm).equals(Array.toHexString(md))) {
+		            throw new Exception("Message-digest attribute verify failed");
+		        }
+
+		        //проверка аттрибута signing-time
+		        final Asn1ObjectIdentifier signTimeOid = new Asn1ObjectIdentifier(
+		                (new OID(STR_CMS_OID_SIGN_TYM_ATTR)).value);
+
+		        Attribute signTimeAttr = null;
+
+		        for (int r = 0; r < signAttrElem.length; r++) {
+		            final Asn1ObjectIdentifier oid = signAttrElem[r].type;
+		            if (oid.equals(messageDigestOid)) {
+		                signTimeAttr = signAttrElem[r];
+		            }
+		        }
+
+		        if (signTimeAttr != null) {
+		            //проверка (необязательно)
+		        }
+
+		        //данные для проверки подписи
+		        final Asn1BerEncodeBuffer encBufSignedAttr = new Asn1BerEncodeBuffer();
+		        signerInfo.signedAttrs.encode(encBufSignedAttr);
+		        data = encBufSignedAttr.getMsgCopy();
 			}
 			
 			// собственно сама подпись
@@ -758,12 +840,16 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			// ... и проверка подписи
 			signatureValidated = verifySignature(cert, sign, data);
 			String resMsg = "Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValidated;
+			
 			if (LOG.isLoggable(Level.FINE)) {
 				LOG.fine(resMsg);
 			}
+			
 			if (!signatureValidated) { // если подпись не сходится, то выбрасываемся
 				throw new SignatureException("Signature verification failed. " + resMsg);
 			}
+			
+			/* TODO Тут нужно проверить сертификат на валидность: дата, chain, CRL */
 		}
 		
 		if (!signatureValidated) { // если ни одна из подписей не смогла пройти проверку по той или иной причине
@@ -777,6 +863,15 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		issuerName.encode(encBuf);				
 		X500Principal x500Principal = new X500Principal(encBuf.getMsgCopy());
 		return x500Principal;
+	}
+	
+	public static byte[] digestm(byte[] bytes, String digestAlgorithmName) throws Exception {
+	    //calculation messageDigest
+	    final ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+	    final MessageDigest digest = MessageDigest.getInstance(digestAlgorithmName);
+	    final DigestInputStream digestStream = new DigestInputStream(stream, digest);
+	    while (digestStream.available() != 0) digestStream.read();
+	    return digest.digest();
 	}
 	
 	private static boolean verifySignature(X509Certificate cert, byte[] sign, byte[] text) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
