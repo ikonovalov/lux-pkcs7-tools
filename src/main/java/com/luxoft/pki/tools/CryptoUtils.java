@@ -39,11 +39,13 @@ public abstract class CryptoUtils {
 	
 	private int verificationOptions = 0;
 	
-	public static int STORED_CERT_ONLY = 1;
+	public final static int OPT_ALL_FLAGS_DOWN  = 0;
 	
-	public static int BUILD_CERT_CHAIN = 2;
+	public final static int OPT_STORED_CERT_ONLY = 1;
 	
-	public static int CHECK_CRL = 4;
+	public final static int OPT_BUILD_CERT_CHAIN = 2;
+	
+	public final static int OPT_CHECK_CRL = 4;
 	
 	// --- ABSTRACT PART -------------------------------------------
 	public abstract byte[] decrypt(byte[] ciphertext) throws Exception;

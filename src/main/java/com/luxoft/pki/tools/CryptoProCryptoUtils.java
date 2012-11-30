@@ -702,7 +702,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			
 			X509Certificate cert = null;
 
-			if (!isFlasSet(STORED_CERT_ONLY)) { // только если есть проверка на вложеных сертификатах разрешена
+			if (!isFlasSet(OPT_STORED_CERT_ONLY)) { // только если есть проверка на вложеных сертификатах разрешена
 				// пробуем найти нужный сертификат во входящих сертификатах (по IssuerAndSerialNumber или SubjectKeyIdentifier)
 				if (sid.getChoiceID() == SignerIdentifier._ISSUERANDSERIALNUMBER) {
 					IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) sid.getElement();
@@ -746,8 +746,12 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			final byte[] sign = signerInfo.signature.value;
 			
 			boolean signatureValid = verifySignature(cert, sign, data);
+			String resMsg = "Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValid;
 			if (LOG.isLoggable(Level.FINE)) {
-				LOG.fine("Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValid);
+				LOG.fine(resMsg);
+			}
+			if (!signatureValid) { // если подпись не сходится, то выбрасываемся
+				throw new SignatureException("Signature verification failed. " + resMsg);
 			}
 		}
 

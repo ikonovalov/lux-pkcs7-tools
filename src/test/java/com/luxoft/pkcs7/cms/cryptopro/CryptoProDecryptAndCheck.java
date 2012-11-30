@@ -33,7 +33,7 @@ public class CryptoProDecryptAndCheck {
 		
 		byte[] decrypted = cputils.decrypt(encrypted);
 		
-		cputils.withVerificationOptions(CryptoProCryptoUtils.STORED_CERT_ONLY);
+		cputils.withVerificationOptions(CryptoProCryptoUtils.OPT_STORED_CERT_ONLY);
 		cputils.verify(decrypted);
 		
 		byte[] detached = cputils.detach(decrypted);
