@@ -649,6 +649,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		
 		final SignedData signedData = (SignedData) all.content;
 		
+		final OID eContTypeOID = new OID(signedData.encapContentInfo.eContentType.value);
+		
 		// encapContentInfo ~ getting payload
 		final byte[] payloadBytes;
 		if (signedData.encapContentInfo.eContent != null)
@@ -657,11 +659,11 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			throw new Exception("No content for verify");
 		
 		// digestAlgorithms - scanning... 
-		OID digestOid = null;
+		OID gostDigestOid = null;
 		final DigestAlgorithmIdentifier digestAlgorithmIdentifier = new DigestAlgorithmIdentifier(new OID(JCP.GOST_DIGEST_OID).value);
 		for (int i = 0; i < signedData.digestAlgorithms.elements.length; i++) {
 			if (signedData.digestAlgorithms.elements[i].algorithm.equals(digestAlgorithmIdentifier.algorithm)) {
-				digestOid = new OID(signedData.digestAlgorithms.elements[i].algorithm.value);
+				gostDigestOid = new OID(signedData.digestAlgorithms.elements[i].algorithm.value);
 				break;
 			}
 		}
@@ -671,8 +673,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		 * algorithm that is not included in this set.  The message digesting
 		 * process is described in Section 5.4.
 		 */
-		if (digestOid == null && signedData.digestAlgorithms.elements != null && signedData.digestAlgorithms.elements.length > 0) {
-			throw new Exception("Encountered unknown digest OID");
+		if (gostDigestOid == null && signedData.digestAlgorithms.elements != null && signedData.digestAlgorithms.elements.length > 0) {
+			throw new Exception(JCP.GOST_DIGEST_OID + " (GOST_DIGEST_OID) not found in SignedData");
 		}
 		
 		// certificates
@@ -691,14 +693,16 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		List<CertStore> certificates = new ArrayList<CertStore>();
 		certificates.add(signedDataCertificates);
 		
-		
-		final OID eContTypeOID = new OID(signedData.encapContentInfo.eContentType.value);
-		
 		// Вращаем подписчиков
 		SignerInfo[] signerInfos = signedData.signerInfos.elements;
 		for (int z = 0; z < signerInfos.length; z++) {
 			SignerInfo signerInfo = signerInfos[z];
 			SignerIdentifier sid = signerInfo.sid;
+			
+			OID siDigestAlgOID = new OID(signerInfo.digestAlgorithm.algorithm.value);
+			if (!gostDigestOid.equals(siDigestAlgOID)) {
+				throw new SignatureException("Unknown digist algorithm in " + signerIdentifierToString(sid) + ". Algorithm name is " + siDigestAlgOID.toString());
+			}
 			
 			X509Certificate cert = null;
 
@@ -745,6 +749,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			// собственно сама подпись
 			final byte[] sign = signerInfo.signature.value;
 			
+			// ... и проверка подписи
 			boolean signatureValid = verifySignature(cert, sign, data);
 			String resMsg = "Math verification result: "+ signerIdentifierToString(sid) + " -> " + cert.getSubjectDN() + " -> valid=" + signatureValid;
 			if (LOG.isLoggable(Level.FINE)) {

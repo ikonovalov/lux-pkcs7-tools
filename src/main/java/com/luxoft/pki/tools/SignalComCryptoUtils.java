@@ -329,6 +329,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         	LOG.fine("Signature " + cert.getSubjectDN().getName() + " verifying...");
         }
         
+        //проверка подписи
         if (!signerInfo.verify(cert)) {
             throw new CMSException("Signature " + cert.getSubjectDN().getName() +" failure");
         }
