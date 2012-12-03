@@ -247,12 +247,11 @@ public class PKIXUtils {
 	/**
 	 * Checks whether given X.509 certificate is self-signed.
 	 */
-	public static boolean isSelfSigned(X509Certificate cert) throws CertificateException, NoSuchAlgorithmException,
-			NoSuchProviderException {
+	public static boolean isSelfSigned(X509Certificate cert) throws CertificateException, NoSuchAlgorithmException, NoSuchProviderException {
 		try {
 			// Try to verify certificate signature with its own public key
 			PublicKey key = cert.getPublicKey();
-			cert.verify(key);
+			cert.verify(key);	
 			return true;
 		} catch (SignatureException sigEx) {
 			// Invalid signature --> not self-signed

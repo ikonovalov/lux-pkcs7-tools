@@ -141,24 +141,28 @@ public class CertificateVerifier {
 				throw new CertificateVerificationException("Self-signed certificates are not allowed.");
 			}
 
-			// Prepare a set of trusted root CA certificates
-			// and a set of intermediate certificates
+			// Prepare a set of trusted root CA certificates and a set of intermediate certificates
 			Set<X509Certificate> trustedRootCerts = new HashSet<X509Certificate>();
 			Set<X509Certificate> intermediateCerts = new HashSet<X509Certificate>();
+			LOG.fine("Start sorting certificates...");
 			for (X509Certificate additionalCert : additionalCerts) {
 				if (isSelfSigned(additionalCert)) {
 					trustedRootCerts.add(additionalCert);
 					if (LOG.isLoggable(Level.FINE)) {
-						LOG.fine("Certificate " + additionalCert.getSubjectDN().getName() + " added as trusted certificate");
+						LOG.fine("Certificate " + additionalCert.getSubjectDN().getName() + " added as trusted certificate (TRUSTED)");
 					}
 				} else {
 					intermediateCerts.add(additionalCert);
+					if (LOG.isLoggable(Level.FINE)) {
+						LOG.fine("Certificate " + additionalCert.getSubjectDN().getName() + " added as intermediate certificate (INTERMID)");
+					}
 				}
 			}
-			
+			System.out.println("1");
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
-
+			LOG.fine("Certificate chain has built: trusted anchor is " + verifiedCertChain.getTrustAnchor().getCAName());
+			System.out.println('2');
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
@@ -189,11 +193,11 @@ public class CertificateVerifier {
 			return new CertificateVerificationResult(verifiedCertChain, validatedCertChain);
 			
 		} catch (CertPathBuilderException certPathEx) {
-			
+			LOG.severe("Chain build failed: " + certPathEx.toString());
 			throw new CertificateVerificationException("Error building certification path: " + cert.getSubjectX500Principal() + ". " + certPathEx.getMessage(), certPathEx);
 			
 		} catch (CertificateVerificationException cvex) {
-			
+			LOG.severe("Verification error: " + cvex.toString());
 			throw cvex;
 			
 		} catch (Exception ex) {
@@ -241,12 +245,13 @@ public class CertificateVerifier {
 		// Specify a list of intermediate certificates
 		CertStore intermediateCertStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts));
 		pkixParams.addCertStore(intermediateCertStore);
+		pkixParams.setSigProvider(provider);
 
 		// Build and verify the certification chain
-		CertPathBuilder builder = (provider != null ? CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX, provider) : CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX));
+		CertPathBuilder builder = CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX);
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
 		if (LOG.isLoggable(Level.FINE)) {
-			LOG.fine("CertPathBuilder complited for " + cert.getSubjectDN().getName() + " using builder's provider: " + builder.getProvider().getName());
+			LOG.fine("CertPathBuilder complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
 		}
 		return result;
 	}

@@ -850,6 +850,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			}
 			
 			/* TODO Тут нужно проверить сертификат на валидность: дата, chain, CRL */
+			CertificateVerifier.verifyCertificate(cert, getKeyStore(), true, "JCP");
 		}
 		
 		if (!signatureValidated) { // если ни одна из подписей не смогла пройти проверку по той или иной причине
