@@ -21,22 +21,16 @@ public class CryptoProDecryptAndCheck {
 		
 		//Security.addProvider(new SignalCOMProvider());
 		
-		System.setProperty("http.proxyHost", "192.168.5.15");
-		System.setProperty("http.proxyPort", "8080");  
+		System.setProperty("http.proxyHost", "localhost");
+		System.setProperty("http.proxyPort", "8081");  
 		
 		PKIXUtils.enableCRLDP(true);
 		PKIXUtils.enableOCSP(true);
 		
-		
-		Provider[] provArray = Security.getProviders();
-		for (Provider provider : provArray) {
-			System.out.println(provider.getName());
-		}
-		
 		CryptoUtils cputils = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		
 		
-		cputils.signer("luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
+		cputils.signer("st1", "luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
 		
 		byte[] signedData = cputils.signAttached("bu-bu777888-000-111-222".getBytes());
 		
@@ -46,7 +40,7 @@ public class CryptoProDecryptAndCheck {
 		
 		byte[] decrypted = cputils.decrypt(encrypted);
 		
-		cputils.withVerificationOptions(CryptoProCryptoUtils.OPT_STORED_CERT_ONLY);
+		cputils.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_ALLOW_SELFSIGNED_CERT);
 		cputils.verify(decrypted);
 		
 		byte[] detached = cputils.detach(decrypted);

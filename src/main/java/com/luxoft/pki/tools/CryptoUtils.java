@@ -43,9 +43,13 @@ public abstract class CryptoUtils {
 	
 	public final static int OPT_STORED_CERT_ONLY = 1;
 	
-	public final static int OPT_BUILD_CERT_CHAIN = 2;
+	public final static int OPT_ALLOW_SELFSIGNED_CERT = 8;
 	
-	public final static int OPT_CHECK_CRL = 4;
+	public final static int OPT_SKIP_SELFSIGNED_CERT = 16;
+	
+	public final static int OPT_DISABLE_CERT_VALIDATION = 32;
+	
+	public final static int OPT_STRONG_POLICY = OPT_STORED_CERT_ONLY;
 	
 	// --- ABSTRACT PART -------------------------------------------
 	public abstract byte[] decrypt(byte[] ciphertext) throws Exception;
@@ -83,8 +87,12 @@ public abstract class CryptoUtils {
 		return this.verificationOptions;
 	}
 	
-	protected final boolean isFlasSet(int flagbitN) {
+	protected final boolean isFlagSet(int flagbitN) {
 		return (verificationOptions & flagbitN) == flagbitN;
+	}
+	
+	protected final boolean isFlagNotSet(int flagbitN) {
+		return !isFlagSet(flagbitN);
 	}
 	
 	/**
@@ -132,10 +140,6 @@ public abstract class CryptoUtils {
 		}
 	}
 	
-	protected static CertStore createCertStoreFromList(List<X509Certificate> certs) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
-		return CertStore.getInstance("Collection", new CollectionCertStoreParameters(certs));
-	}
-	
 	/**
 	 * Вызгузка всех сертификатов в хранилище как CertStore
 	 * @return
@@ -151,7 +155,7 @@ public abstract class CryptoUtils {
 			X509Certificate cert = getCertificateFromStore(currentAlias);
 			certs.add(cert);
 		}
-		return createCertStoreFromList(certs);
+		return PKIXUtils.createCertStoreFromList(certs);
 	}
 	
 	/**

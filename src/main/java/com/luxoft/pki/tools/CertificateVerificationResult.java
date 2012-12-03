@@ -56,7 +56,7 @@ public class CertificateVerificationResult {
 	@Override
 	public String toString() {
 		if (valid) {
-			return buildpathResult.toString();
+			return buildpathResult != null ? buildpathResult.toString() : "empty buildpathResult";
 		} else {
 			return exception.getMessage();
 		}

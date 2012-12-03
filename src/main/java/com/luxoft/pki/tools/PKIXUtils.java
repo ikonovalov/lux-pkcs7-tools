@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -15,12 +16,14 @@ import java.security.PublicKey;
 import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.CRLException;
+import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CertificateParsingException;
+import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -307,5 +310,9 @@ public class PKIXUtils {
 	
 	public static synchronized boolean isIBMJ9() {
 		return (isIBMJ9 == null ? isIBMJ9 = System.getProperty("java.vendor").toUpperCase().contains("IBM") : isIBMJ9);
+	}
+	
+	public static CertStore createCertStoreFromList(List<X509Certificate> certs) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+		return CertStore.getInstance("Collection", new CollectionCertStoreParameters(certs));
 	}
 }

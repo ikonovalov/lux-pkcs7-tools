@@ -704,7 +704,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		}
 		
 		// Сертификаты из SignedData
-		CertStore signedDataCertificates = createCertStoreFromList(signedDataCertificatesList);
+		CertStore signedDataCertificates = PKIXUtils.createCertStoreFromList(signedDataCertificatesList);
 		List<CertStore> certificates = new ArrayList<CertStore>();
 		certificates.add(signedDataCertificates);
 		
@@ -725,7 +725,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			
 			X509Certificate cert = null;
 
-			if (!isFlasSet(OPT_STORED_CERT_ONLY)) { // только если есть проверка на вложеных сертификатах разрешена
+			if (isFlagNotSet(OPT_STORED_CERT_ONLY)) { // только если есть проверка на вложеных сертификатах разрешена
 				// пробуем найти нужный сертификат во входящих сертификатах (по IssuerAndSerialNumber или SubjectKeyIdentifier)
 				if (sid.getChoiceID() == SignerIdentifier._ISSUERANDSERIALNUMBER) {
 					IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) sid.getElement();
@@ -754,6 +754,13 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			
 			
 			if (cert == null) { // если подходящего сертификата не нашлось, то переходим к другому подписанту
+				continue;
+			}
+			
+			// пропуск самоподписанного сертификата если такая опция установлена
+			boolean skipSelfSigned = isFlagSet(OPT_SKIP_SELFSIGNED_CERT);
+			if (skipSelfSigned && PKIXUtils.isSelfSigned(cert)) {
+				LOG.info("Skip (with option OPT_SKIP_SELFSIGNED_CERT) self-signed certificate " + cert.getSubjectDN().getName() + " serial is " + cert.getSerialNumber());
 				continue;
 			}
 			
@@ -845,12 +852,16 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 				LOG.fine(resMsg);
 			}
 			
-			if (!signatureValidated) { // если подпись не сходится, то выбрасываемся
+			if (!signatureValidated) { // если подпись не сходится, то выбрасываемся. Выбрасываемся, а не переходим дальше потому что сертификат есть, а подпись ему не соответствует. 
 				throw new SignatureException("Signature verification failed. " + resMsg);
 			}
 			
-			/* TODO Тут нужно проверить сертификат на валидность: дата, chain, CRL */
-			CertificateVerifier.verifyCertificate(cert, getKeyStore(), true, "JCP");
+			if (isFlagNotSet(OPT_DISABLE_CERT_VALIDATION)) {
+				/* Проверить сертификат на валидность: дата, chain, CRL */
+				boolean allowSelfSignedCertificates = isFlagSet(OPT_ALLOW_SELFSIGNED_CERT);
+				CertificateVerifier.verifyCertificate(cert, getKeyStore(), allowSelfSignedCertificates, "JCP");
+			}
+			
 		}
 		
 		if (!signatureValidated) { // если ни одна из подписей не смогла пройти проверку по той или иной причине

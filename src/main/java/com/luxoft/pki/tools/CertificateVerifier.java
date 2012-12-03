@@ -158,10 +158,11 @@ public class CertificateVerifier {
 					}
 				}
 			}
-			System.out.println("1");
+			
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
-			System.out.println('2');
+			System.out.println(verifiedCertChain);
+
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
@@ -256,7 +257,7 @@ public class CertificateVerifier {
 		if (LOG.isLoggable(Level.FINE)) {
 			LOG.fine("Building cert chain complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
 			TrustAnchor trustAnchor = result.getTrustAnchor();
-			LOG.fine("Certificate chain has built: Root (trusted) anchor is '" + (certPathLen != 0 ? trustAnchor.getTrustedCert().getSubjectDN().getName() : " SELF -> self-signed") + "', total path lenght is " + certPathLen);
+			LOG.fine("Certificate chain has built: Root (trusted) anchor is '" + (certPathLen != 0 ? trustAnchor.getTrustedCert().getSubjectDN().getName() : "SELF -> self-signed") + "', total path lenght is " + certPathLen);
 			
 		}
 		
@@ -302,7 +303,15 @@ public class CertificateVerifier {
 		pkixParams.setSigProvider(provider);
 
 		final CertPathValidator validator = CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX);
+		
+		LOG.fine("Validating certificate chain for "+ cert.getSubjectDN().getName());
+		
 		final CertPathValidatorResult validationResult = validator.validate(certPath, pkixParams);
+		
+		if (LOG.isLoggable(Level.FINE)) {
+			LOG.fine("Cert chain validation complete successfully. " + validationResult);
+		}
+		
 		return validationResult;
 	}
 	
