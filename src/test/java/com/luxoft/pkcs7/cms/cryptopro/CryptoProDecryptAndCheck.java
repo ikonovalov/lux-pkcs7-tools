@@ -36,7 +36,7 @@ public class CryptoProDecryptAndCheck {
 		CryptoUtils cputils = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		
 		
-		cputils.signer("Rapida").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
+		cputils.signer("luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
 		
 		byte[] signedData = cputils.signAttached("bu-bu777888-000-111-222".getBytes());
 		

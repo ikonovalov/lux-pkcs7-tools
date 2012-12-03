@@ -251,11 +251,17 @@ public class CertificateVerifier {
 		// Build and verify the certification chain
 		CertPathBuilder builder = CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX);
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
+		int certPathLen = result.getCertPath().getCertificates().size();
 		
 		if (LOG.isLoggable(Level.FINE)) {
-			LOG.fine("CertPathBuilder complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
-			String caName = result.getTrustAnchor().getCAName();
-			LOG.fine("Certificate chain has built: trusted anchor is " + (caName != null ? caName : "null (self-signed)"));
+			LOG.fine("Building cert chain complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
+			TrustAnchor trustAnchor = result.getTrustAnchor();
+			LOG.fine("Certificate chain has built: Root (trusted) anchor is '" + (certPathLen != 0 ? trustAnchor.getTrustedCert().getSubjectDN().getName() : " SELF -> self-signed") + "', total path lenght is " + certPathLen);
+			
+		}
+		
+		if (certPathLen < 2) {
+			LOG.warning("\tCertPath is very short. Use more sophisticated PKI infrastructure.");
 		}
 		return result;
 	}
@@ -291,10 +297,11 @@ public class CertificateVerifier {
 		pkixParams.setRevocationEnabled(true);
 		
 		// Specify a list of intermediate certificates
-		CertStore intermediateCertStore = (provider != null ? CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts), provider) : CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts)));
+		CertStore intermediateCertStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts));
 		pkixParams.addCertStore(intermediateCertStore);
+		pkixParams.setSigProvider(provider);
 
-		final CertPathValidator validator = (provider != null ? CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX, provider) : CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX));
+		final CertPathValidator validator = CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX);
 		final CertPathValidatorResult validationResult = validator.validate(certPath, pkixParams);
 		return validationResult;
 	}
