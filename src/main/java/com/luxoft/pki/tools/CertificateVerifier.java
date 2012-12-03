@@ -161,7 +161,6 @@ public class CertificateVerifier {
 			System.out.println("1");
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
-			LOG.fine("Certificate chain has built: trusted anchor is " + verifiedCertChain.getTrustAnchor().getCAName());
 			System.out.println('2');
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
@@ -225,7 +224,9 @@ public class CertificateVerifier {
 	 *             expired)
 	 */
 	private static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws GeneralSecurityException {
-		LOG.fine("Building cert chain for " + cert.getSubjectDN().getName());
+		if (LOG.isLoggable(Level.FINE)) {
+			LOG.fine("Building cert chain for " + cert.getSubjectDN().getName() + ", serial " + cert.getSerialNumber());
+		}
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
 		selector.setCertificate(cert);
@@ -250,8 +251,11 @@ public class CertificateVerifier {
 		// Build and verify the certification chain
 		CertPathBuilder builder = CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX);
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
+		
 		if (LOG.isLoggable(Level.FINE)) {
 			LOG.fine("CertPathBuilder complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
+			String caName = result.getTrustAnchor().getCAName();
+			LOG.fine("Certificate chain has built: trusted anchor is " + (caName != null ? caName : "null (self-signed)"));
 		}
 		return result;
 	}
