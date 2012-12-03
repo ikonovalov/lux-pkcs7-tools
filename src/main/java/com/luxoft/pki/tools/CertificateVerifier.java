@@ -12,6 +12,7 @@ import static com.luxoft.pki.tools.PKIXUtils.isSelfSigned;
 import static com.luxoft.pki.tools.PKIXUtils.isSunCRLDPEnabled;
 import static com.luxoft.pki.tools.PKIXUtils.isX509Certificate;
 
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
@@ -161,7 +162,6 @@ public class CertificateVerifier {
 			
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
-			System.out.println(verifiedCertChain);
 
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
@@ -231,6 +231,8 @@ public class CertificateVerifier {
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
 		selector.setCertificate(cert);
+		
+		intermediateCerts.add(cert); // Workaround for IBM J9
 
 		// Create the trust anchors (set of root CA certificates)
 		Set<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
@@ -239,7 +241,7 @@ public class CertificateVerifier {
 		}
 
 		// Configure the PKIX certificate builder algorithm parameters
-		PKIXBuilderParameters pkixParams = new PKIXBuilderParameters(trustAnchors, selector);
+		PKIXBuilderParameters pkixParams = new PKIXBuilderParameters(trustAnchors, selector); 
 
 		// Disable CRL checks (this is done manually as additional step)
 		pkixParams.setRevocationEnabled(false);
@@ -247,6 +249,7 @@ public class CertificateVerifier {
 		// Specify a list of intermediate certificates
 		CertStore intermediateCertStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts));
 		pkixParams.addCertStore(intermediateCertStore);
+				
 		pkixParams.setSigProvider(provider);
 
 		// Build and verify the certification chain
