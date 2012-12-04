@@ -42,6 +42,11 @@ public class CryptoProDecryptAndCheck {
 		
 		cputils.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_ALLOW_SELFSIGNED_CERT);
 		cputils.verify(decrypted);
+		System.out.println("Verification OPT_STRONG_POLICY | OPT_ALLOW_SELFSIGNED_CERT");
+		
+		cputils.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_SKIP_SELFSIGNED_CERT);
+		cputils.verify(decrypted);
+		System.out.println("Verification OPT_STRONG_POLICY | OPT_SKIP_SELFSIGNED_CERT");
 		
 		byte[] detached = cputils.detach(decrypted);
 		System.out.println(new String(detached));

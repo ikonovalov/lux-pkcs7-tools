@@ -176,6 +176,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
             }
         }
         certStores.add(PKIXUtils.createCertStoreFromList(certs));
+        CryptoUtils.setCertPathBuilder(CertPathBuilder.getInstance("PKIX", "SC"));
     }
 
     /**

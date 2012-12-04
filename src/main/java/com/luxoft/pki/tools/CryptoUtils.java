@@ -7,6 +7,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
 import java.security.cert.CertStoreException;
 import java.security.cert.CollectionCertStoreParameters;
@@ -33,6 +34,19 @@ import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.SignerIdentifier;
 @SuppressWarnings("restriction")
 public abstract class CryptoUtils {
 	
+	private final static ThreadLocal<CertPathBuilder> certPathBuilder = new ThreadLocal<CertPathBuilder>() {
+
+		@Override
+		protected CertPathBuilder initialValue() {
+			try {
+				return CertPathBuilder.getInstance("PKIX");
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+		
+	};
+	
 	public static final String SUBJECT_KEY_IDENTEFER_OID = "2.5.29.14";
 	
 	private KeyStore keyStore = null;
@@ -52,6 +66,14 @@ public abstract class CryptoUtils {
 	public final static int OPT_STRONG_POLICY = OPT_STORED_CERT_ONLY;
 	
 	// --- ABSTRACT PART -------------------------------------------
+	public static CertPathBuilder getCertPathBuilder() {
+		return certPathBuilder.get();
+	}
+	
+	public static void setCertPathBuilder(CertPathBuilder builder) {
+		certPathBuilder.set(builder);
+	}
+	
 	public abstract byte[] decrypt(byte[] ciphertext) throws Exception;
 	
 	public abstract byte[] detach(byte[] signed) throws Exception;
@@ -81,6 +103,7 @@ public abstract class CryptoUtils {
 	// =============================================================
 	
 	public final int withVerificationOptions(int... flags) {
+		this.verificationOptions = OPT_ALL_FLAGS_DOWN;
 		for (int f : flags) {
 			this.verificationOptions |= f;
 		}
