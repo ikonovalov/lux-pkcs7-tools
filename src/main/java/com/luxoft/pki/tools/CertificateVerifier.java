@@ -224,7 +224,7 @@ public class CertificateVerifier {
 	 *             path cannot be built or some certificate in the chain is
 	 *             expired)
 	 */
-	private static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws GeneralSecurityException {
+	public static PKIXCertPathBuilderResult buildCertificateChain(X509Certificate cert, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws GeneralSecurityException {
 		if (LOG.isLoggable(Level.FINE)) {
 			LOG.fine("Building cert chain for " + cert.getSubjectDN().getName() + ", serial " + cert.getSerialNumber());
 		}
