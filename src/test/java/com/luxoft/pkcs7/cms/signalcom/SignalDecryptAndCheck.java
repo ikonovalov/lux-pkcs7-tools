@@ -46,9 +46,11 @@ public class SignalDecryptAndCheck {
 		System.out.println(new ProductInfo());
 		String keystoreFile = "C:/developer/lib/signalcom/scjcms-sdk-1.2.7/scjcms-sdk-1.2.7/test/pse/keystore.p12";
 		String password = "111111";
+		String[] signer = new String[]{"ecgost-cp"};
+		String[] recipient = new String[]{"ecgost-cp"};
 		
 		CryptoUtils scutils = new SignalComCryptoUtils(keystoreFile, password); 
-		scutils.signer("ecgost-cp").recipients("ecgost-cp");
+		scutils.signer(signer).recipients(recipient);
 		
 		byte[] signedData = scutils.signAttached(keystoreFile.getBytes());
 		System.out.print("Signed");
@@ -63,11 +65,14 @@ public class SignalDecryptAndCheck {
 		byte[] decrypted = scutils.decrypt(encrypted);
 		System.out.print(" -> Decrypt");
 		
+		
+		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
 		scutils.verify(decrypted);
 		System.out.print(" -> Verify");
 		
 		byte[] detached = scutils.detach(decrypted);
 		System.out.println(" -> Detach");
+		
 		
 		FileOutputStream fos2 = new FileOutputStream("C:/developer/temp/signalcom_enveloped.p7m");
 		fos2.write(encrypted);

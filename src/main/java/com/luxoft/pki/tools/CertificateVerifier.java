@@ -88,10 +88,10 @@ public class CertificateVerifier {
 				try {
 					chechValidDate(c);
 				} catch (CertificateExpiredException cee) {
-					LOG.fine(alias + " expired " + cee.getMessage());
+					LOG.severe(alias + " (" + ((X509Certificate)c).getSubjectDN().getName() + ") expired " + cee.getMessage() + " and skipped");
 					continue;
 				} catch (CertificateNotYetValidException cnyve) {
-					LOG.fine(alias + " not yet valide " + cnyve.getMessage());
+					LOG.severe(alias + " (" + ((X509Certificate)c).getSubjectDN().getName() + ") not yet valide " + cnyve.getMessage() + " and skipped");
 					continue;
 				}
 				allStoredCerts.add((X509Certificate) c);
