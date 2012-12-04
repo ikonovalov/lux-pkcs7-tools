@@ -6,8 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -16,25 +14,13 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
-import java.security.cert.CertStoreException;
-import java.security.cert.CollectionCertStoreParameters;
-import java.security.cert.PKIXBuilderParameters;
-import java.security.cert.PKIXCertPathBuilderResult;
-import java.security.cert.PKIXParameters;
-import java.security.cert.TrustAnchor;
-import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.security.auth.x500.X500Principal;
 
 import ru.signalcom.crypto.cms.Attribute;
 import ru.signalcom.crypto.cms.AttributeType;
@@ -42,14 +28,12 @@ import ru.signalcom.crypto.cms.CMSException;
 import ru.signalcom.crypto.cms.ContentInfoParser;
 import ru.signalcom.crypto.cms.ContentType;
 import ru.signalcom.crypto.cms.CounterSignature;
-import ru.signalcom.crypto.cms.CounterSignatureGenerator;
 import ru.signalcom.crypto.cms.EnvelopedDataGenerator;
 import ru.signalcom.crypto.cms.EnvelopedDataParser;
 import ru.signalcom.crypto.cms.Recipient;
 import ru.signalcom.crypto.cms.RecipientInfo;
 import ru.signalcom.crypto.cms.SignedDataGenerator;
 import ru.signalcom.crypto.cms.SignedDataParser;
-import ru.signalcom.crypto.cms.SignedDataReplacer;
 import ru.signalcom.crypto.cms.Signer;
 import ru.signalcom.crypto.cms.SignerInfo;
 
@@ -67,17 +51,15 @@ public final class SignalComCryptoUtils extends CryptoUtils {
     private final String psePath;
     private final String storeFile;
     private final char[] storePassword;
-    private final Set<TrustAnchor> trust = new HashSet<TrustAnchor>();
+
     private final List<Signer> signers = new ArrayList<Signer>();
     private final List<Recipient> recipients = new ArrayList<Recipient>();
     
-    /**
-     * Список содержит сертификаты, у которых есть закрытые ключи. 
-     */
-    private final List<CertStore> certStores = new ArrayList<CertStore>(); /* Зачем сюда кидать списки из CRL? */
     private SecureRandom random;
     
     private static Logger LOG = Logger.getLogger(SignalComCryptoUtils.class.getName());
+    
+    private final List<CertStore> allStoredCertificates = new ArrayList<CertStore>();
     
     /**
      * 
@@ -118,6 +100,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
     	for (String signer : signerAliases) {
     		if (getKeyStore().isKeyEntry(signer)) {
     			addSignerToList(signer);
+    			LOG.fine("Adding signer with alias " + signer);
     		} else {
     			LOG.warning("Alias " + signer + " doesn't have private key and can't be a signer");
     		}
@@ -159,23 +142,11 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         keyStore.load(in, storePassword);
         in.close();
         setKeyStore(keyStore);
+        
+        LOG.fine("Load all certificates from store...");
+        allStoredCertificates.add(getAllCertificateFromStore());
 
-        List<X509Certificate> certs = new ArrayList<X509Certificate>();
-        Enumeration<String> aliases = keyStore.aliases();
-        while (aliases.hasMoreElements()) {
-            String alias = aliases.nextElement();
-            System.out.println("I got alias: " + alias);
-            if (keyStore.isCertificateEntry(alias)) { // Все сертификаты не в цепочках ключей добавляем в trusted
-                X509Certificate cert = getCertificateFromStore(alias);
-                trust.add(new TrustAnchor(cert, null)); /* TODO Этот момент нужно уточнить */
-                System.out.println("\talias '" + alias + "' moves to trusted ");
-            } else if (keyStore.isKeyEntry(alias)) {
-            	X509Certificate cert = getCertificateFromStore(alias);
-            	System.out.println("\talias '" + alias + "' has key");
-                certs.add(cert);
-            }
-        }
-        certStores.add(PKIXUtils.createCertStoreFromList(certs));
+        CryptoUtils.setCertPathBuilder(CertPathBuilder.getInstance("PKIX", "SC"));
     }
 
     /**
@@ -233,82 +204,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         return sign(data, ContentType.DATA, false);
     }
 
-    private byte[] sign(byte[] data, boolean detached) throws Exception {
-        return sign(data, ContentType.DATA, detached);
-    }
-
-    /**
-     * Пример формирования удостоверяющей подписи (countersignature)
-     * для всех подписей, содержащихся в подписанном (SignedData) сообщении.
-     * @param signed подписанное сообщение.
-     * @return новое подписанное сообщение.
-     * @throws Exception
-     */
-    private byte[] countersign(byte[] signed) throws Exception {
-
-        System.out.println("Countersigning...");
-        InputStream in = new ByteArrayInputStream(signed);
-        ContentInfoParser cinfoParser = ContentInfoParser.getInstance(in);
-        if (!(cinfoParser instanceof SignedDataParser)) {
-            throw new RuntimeException("SignedData expected here");
-        }
-        SignedDataParser parser = (SignedDataParser) cinfoParser;
-        parser.process(false);
-        @SuppressWarnings("unchecked")
-        Collection<SignerInfo> signerInfos = parser.getSignerInfos();
-        Iterator<SignerInfo> it = signerInfos.iterator();
-        while (it.hasNext()) {
-            SignerInfo signerInfo = it.next();
-            Iterator<Signer> it2 = signers.iterator();
-            while (it2.hasNext()) {
-                Signer signer = it2.next();
-                CounterSignatureGenerator gen = new CounterSignatureGenerator(signerInfo);
-                CounterSignature csig = gen.generate(signer);
-                signerInfo.addUnsignedAttribute(
-                        new Attribute(AttributeType.COUNTER_SIGNATURE, csig.getEncoded()));
-            }
-        }
-        parser.close();
-
-        in.reset();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        SignedDataReplacer replacer = new SignedDataReplacer(in, out);
-        replacer.setSignerInfos(signerInfos);
-        replacer.open();
-        replacer.process();
-        replacer.close();
-        in.close();
-        return out.toByteArray();
-    }
-
-    /**
-     * Пример проверки сертификата.
-     * @param cert сертификат.
-     * @param trust список доверенных сертификатов.
-     * @param stores хранилища сертификатов и списков отозванных сертификатов.
-     * @return результат проверки.
-     * @throws Exception
-     */
-    private PKIXCertPathBuilderResult verifyCertificate(X509Certificate cert, Set<TrustAnchor> trust, List<CertStore> stores) throws Exception {
-
-    	LOG.fine("X.509 certificate verifying...");
-    	LOG.fine("Subject: " + cert.getSubjectX500Principal());
-    	
-    	System.out.println("Trusted cnt: " + trust.size());
-    	System.out.println("Stores: " + stores.size());
-    	
-        X509CertSelector csel = new X509CertSelector();      
-        csel.setCertificate(cert);
-
-        PKIXParameters params = new PKIXBuilderParameters(trust, csel);
-        params.setCertStores(stores);
-        params.setRevocationEnabled(true);
-
-        CertPathBuilder cpb = CertPathBuilder.getInstance("PKIX", "SC");
-        PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) cpb.build(params);
-        LOG.fine("Trust anchor: " + result.getTrustAnchor().getTrustedCert().getIssuerX500Principal());
-        return result;
-    }
+   
 
     /**
      * Пример проверки блока подписи (SignerInfo).
@@ -321,21 +217,36 @@ public final class SignalComCryptoUtils extends CryptoUtils {
      * @param stores хранилища сертификатов и списков отозванных сертификатов.
      * @throws Exception
      */
-    private void verifySignerInfo(SignerInfo signerInfo, Set<TrustAnchor> trust, List<CertStore> stores) throws Exception {
-
-        X509Certificate cert = lookupCertificateBySerialNumber(stores, signerInfo.getIssuer(), signerInfo.getSerialNumber());
+    private void verifySignerInfo(SignerInfo signerInfo) throws Exception {
+    	
+        X509Certificate signerCert = null;
+        
+        // поиск сертификата в хранилище
+        if (signerInfo.getSubjectKeyIdentifier() == null) {
+        	signerCert = lookupCertificateBySerialNumber(allStoredCertificates, signerInfo.getIssuer(), signerInfo.getSerialNumber());
+        } else {
+        	signerCert = lookupCertificateBySubjectKeyIdentefer(allStoredCertificates, signerInfo.getSubjectKeyIdentifier());
+        }
         
         if (LOG.isLoggable(Level.FINE)) {
-        	LOG.fine("Signature " + cert.getSubjectDN().getName() + " verifying...");
+        	LOG.fine("Signature " + signerCert.getSubjectDN().getName() + " verifying...");
+        }
+        
+        // пропскаем самоподписанные сертификаты, если это необходимо.
+        if (isFlagSet(OPT_SKIP_SELFSIGNED_CERT) && PKIXUtils.isSelfSigned(signerCert)) {
+        	LOG.fine("Skipping self-signed certificate " + signerCert.getSubjectDN().getName());
+        	return;
         }
         
         //проверка подписи
-        if (!signerInfo.verify(cert)) {
-            throw new CMSException("Signature " + cert.getSubjectDN().getName() +" failure");
+        if (!signerInfo.verify(signerCert)) {
+            throw new CMSException("Signature " + signerCert.getSubjectDN().getName() +" failure");
         }
 
-        //verifyCertificate(cert, trust, stores);
-        CertificateVerifier.verifyCertificate(cert, getKeyStore(), true, "SC");
+        if (isFlagNotSet(OPT_DISABLE_CERT_VALIDATION)) {
+        	//verifyCertificate(cert, trust, stores); // это огигинальный вариант проверки из примера
+        	CertificateVerifier.verifyCertificate(signerCert, getKeyStore(), isFlagSet(OPT_ALLOW_SELFSIGNED_CERT), "SC"); // а это наш, адаптированный под разные VM
+        }
         
         @SuppressWarnings("unchecked")
         Collection<Attribute> attrs = signerInfo.getUnsignedAttributes();
@@ -347,7 +258,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
                 if (at.getType().equals(AttributeType.COUNTER_SIGNATURE)) {
                 	LOG.fine("Countersignature was found...");
                     CounterSignature counterSignature = new CounterSignature(at.getValue(), signerInfo);
-                    verifySignerInfo(counterSignature, trust, stores);
+                    verifySignerInfo(counterSignature);
                 }
             }
         }
@@ -377,15 +288,22 @@ public final class SignalComCryptoUtils extends CryptoUtils {
             parser.setContent(new ByteArrayInputStream(data));
         }
         parser.process();
-        certStores.add(parser.getCertificatesAndCRLs());
         in.close();
+        
+        CertStore cmsCertificates = parser.getCertificatesAndCRLs();
+        if (isFlagNotSet(OPT_STORED_CERT_ONLY)) { // если это разрешается, то проверка будет производится И на сертификатах пришедших в CMS
+        	allStoredCertificates.add(cmsCertificates);
+        	if (LOG.isLoggable(Level.FINE)) {
+        		LOG.fine("Added " + cmsCertificates.getCertificates(null).size() + " certificate from incoming CMS. Flag OPT_STORED_CERT_ONLY not set.");
+        	}
+        }
 
         @SuppressWarnings("unchecked")
         Collection<SignerInfo> signerInfos = parser.getSignerInfos();
         Iterator<SignerInfo> it = signerInfos.iterator();
         while (it.hasNext()) {
             SignerInfo signerInfo = it.next();
-            verifySignerInfo(signerInfo, trust, certStores);
+            verifySignerInfo(signerInfo);
         }
         parser.close();
     }
@@ -464,7 +382,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         KeyStore keyStore = getKeyStore();
         while (it.hasNext()) {
             RecipientInfo recInfo = (RecipientInfo) it.next();
-            X509Certificate cert = lookupCertificateBySerialNumber(certStores, recInfo.getIssuer(), recInfo.getSerialNumber());
+            X509Certificate cert = lookupCertificateBySerialNumber(allStoredCertificates, recInfo.getIssuer(), recInfo.getSerialNumber());
             if (cert != null) {
                 PrivateKey priv = (PrivateKey) keyStore.getKey(keyStore.getCertificateAlias(cert), storePassword);
                 if (priv != null) {
@@ -485,4 +403,81 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         }
         throw new RuntimeException("recipient's private key not found");
     }
+    
+    /* private byte[] sign(byte[] data, boolean detached) throws Exception {
+    return sign(data, ContentType.DATA, detached);
+	}*/
+	
+	/**
+	 * Пример формирования удостоверяющей подписи (countersignature)
+	 * для всех подписей, содержащихся в подписанном (SignedData) сообщении.
+	 * @param signed подписанное сообщение.
+	 * @return новое подписанное сообщение.
+	 * @throws Exception
+	 */
+	/*private byte[] countersign(byte[] signed) throws Exception {
+	
+	    System.out.println("Countersigning...");
+	    InputStream in = new ByteArrayInputStream(signed);
+	    ContentInfoParser cinfoParser = ContentInfoParser.getInstance(in);
+	    if (!(cinfoParser instanceof SignedDataParser)) {
+	        throw new RuntimeException("SignedData expected here");
+	    }
+	    SignedDataParser parser = (SignedDataParser) cinfoParser;
+	    parser.process(false);
+	    @SuppressWarnings("unchecked")
+	    Collection<SignerInfo> signerInfos = parser.getSignerInfos();
+	    Iterator<SignerInfo> it = signerInfos.iterator();
+	    while (it.hasNext()) {
+	        SignerInfo signerInfo = it.next();
+	        Iterator<Signer> it2 = signers.iterator();
+	        while (it2.hasNext()) {
+	            Signer signer = it2.next();
+	            CounterSignatureGenerator gen = new CounterSignatureGenerator(signerInfo);
+	            CounterSignature csig = gen.generate(signer);
+	            signerInfo.addUnsignedAttribute(
+	                    new Attribute(AttributeType.COUNTER_SIGNATURE, csig.getEncoded()));
+	        }
+	    }
+	    parser.close();
+	
+	    in.reset();
+	    ByteArrayOutputStream out = new ByteArrayOutputStream();
+	    SignedDataReplacer replacer = new SignedDataReplacer(in, out);
+	    replacer.setSignerInfos(signerInfos);
+	    replacer.open();
+	    replacer.process();
+	    replacer.close();
+	    in.close();
+	    return out.toByteArray();
+	}*/
+	
+	/**
+	 * Пример проверки сертификата.
+	 * @param cert сертификат.
+	 * @param trust список доверенных сертификатов.
+	 * @param stores хранилища сертификатов и списков отозванных сертификатов.
+	 * @return результат проверки.
+	 * @throws Exception
+	 */
+	/*private PKIXCertPathBuilderResult verifyCertificate(X509Certificate cert, Set<TrustAnchor> trust, List<CertStore> stores) throws Exception {
+	
+		LOG.fine("X.509 certificate verifying...");
+		LOG.fine("Subject: " + cert.getSubjectX500Principal());
+		
+		System.out.println("Trusted cnt: " + trust.size());
+		System.out.println("Stores: " + stores.size());
+		
+	    X509CertSelector csel = new X509CertSelector();      
+	    csel.setCertificate(cert);
+	
+	    PKIXParameters params = new PKIXBuilderParameters(trust, csel);
+	    params.setCertStores(stores);
+	    params.setRevocationEnabled(true);
+	
+	    CertPathBuilder cpb = CertPathBuilder.getInstance("PKIX", "SC");
+	    PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) cpb.build(params);
+	    LOG.fine("Trust anchor: " + result.getTrustAnchor().getTrustedCert().getIssuerX500Principal());
+	    return result;
+	}*/
 }

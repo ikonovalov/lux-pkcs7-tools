@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -160,6 +161,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			keyStore.load(null, null);
 		}
 		setKeyStore(keyStore);
+		CryptoUtils.setCertPathBuilder(CertPathBuilder.getInstance("PKIX"));
 	}
 
 	private class Signer {

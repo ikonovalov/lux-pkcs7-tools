@@ -12,7 +12,6 @@ import static com.luxoft.pki.tools.PKIXUtils.isSelfSigned;
 import static com.luxoft.pki.tools.PKIXUtils.isSunCRLDPEnabled;
 import static com.luxoft.pki.tools.PKIXUtils.isX509Certificate;
 
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
@@ -53,7 +52,7 @@ import java.util.logging.Logger;
  * process assumes that all self-signed certificates in the set are trusted root
  * CA certificates and all other certificates in the set are intermediate
  * certificates.
- * 
+ * http://www.nakov.com/blog/2009/12/01/x509-certificate-validation-in-java-build-and-verify-chain-and-verify-clr-with-bouncy-castle/
  * @author Svetlin Nakov and some modified by Igor Konovalov
  */
 public class CertificateVerifier {
@@ -89,10 +88,10 @@ public class CertificateVerifier {
 				try {
 					chechValidDate(c);
 				} catch (CertificateExpiredException cee) {
-					LOG.fine(alias + " expired " + cee.getMessage());
+					LOG.severe(alias + " (" + ((X509Certificate)c).getSubjectDN().getName() + ") expired " + cee.getMessage() + " and skipped");
 					continue;
 				} catch (CertificateNotYetValidException cnyve) {
-					LOG.fine(alias + " not yet valide " + cnyve.getMessage());
+					LOG.severe(alias + " (" + ((X509Certificate)c).getSubjectDN().getName() + ") not yet valide " + cnyve.getMessage() + " and skipped");
 					continue;
 				}
 				allStoredCerts.add((X509Certificate) c);
@@ -162,7 +161,8 @@ public class CertificateVerifier {
 			
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
-
+			
+			LOG.fine("Start certificate validation (data, crldp, ocsp and so on");
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
@@ -179,7 +179,7 @@ public class CertificateVerifier {
 			} else { // for IBM J9
 				if (isOCSPEnabled() && certHasOCSPUrls) { // Проверка осуществляется или в OCSP (приоритетно) или в CRLDP - оба не имеют смысла
 					if (LOG.isLoggable(Level.FINE)) {
-						LOG.fine("Switch OCSP check to automatic mode for IBM VM.");
+						LOG.fine("OCSP detected. Switch checking to automatic mode for IBM VM.");
 					} 
 					validatedCertChain = verifyCertificateCRLsAutomatic(cert, verifiedCertChain.getCertPath(), trustedRootCerts, intermediateCerts, provider);
 				} else if (isIbmCRLDPEnabled() && certHasCRLDPUrls) {
@@ -249,23 +249,23 @@ public class CertificateVerifier {
 		// Specify a list of intermediate certificates
 		CertStore intermediateCertStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(intermediateCerts));
 		pkixParams.addCertStore(intermediateCertStore);
-				
 		pkixParams.setSigProvider(provider);
 
 		// Build and verify the certification chain
-		CertPathBuilder builder = CertPathBuilder.getInstance(CERT_BUILDER_ALG_PKIX);
+		CertPathBuilder builder = CryptoUtils.getCertPathBuilder();
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
 		int certPathLen = result.getCertPath().getCertificates().size();
 		
 		if (LOG.isLoggable(Level.FINE)) {
-			LOG.fine("Building cert chain complited for " + cert.getSubjectDN().getName() + " using builder's provider " + builder.getProvider().getName() + " with signature provider " + pkixParams.getSigProvider());
+			LOG.fine("Building cert chain complited for " + cert.getSubjectDN().getName() + " using builder's provider '" + builder.getProvider().getName() + "' with signature provider '" + pkixParams.getSigProvider() + "'");
+			LOG.fine("Path is " + result);
 			TrustAnchor trustAnchor = result.getTrustAnchor();
 			LOG.fine("Certificate chain has built: Root (trusted) anchor is '" + (certPathLen != 0 ? trustAnchor.getTrustedCert().getSubjectDN().getName() : "SELF -> self-signed") + "', total path lenght is " + certPathLen);
 			
 		}
 		
 		if (certPathLen < 2) {
-			LOG.warning("\tCertPath is very short. Use more sophisticated PKI infrastructure.");
+			LOG.warning("\tCertPath for '" + cert.getSubjectDN().getName() + "' is very short. Use more sophisticated PKI infrastructure.");
 		}
 		return result;
 	}
@@ -283,7 +283,8 @@ public class CertificateVerifier {
 	 * @throws NoSuchProviderException 
 	 */
 	private static CertPathValidatorResult verifyCertificateCRLsAutomatic(X509Certificate cert, CertPath certPath, Set<X509Certificate> trustedRootCerts, Set<X509Certificate> intermediateCerts, String provider) throws CertPathValidatorException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-
+		boolean isFine = LOG.isLoggable(Level.FINE);
+		
 		// Create the selector that specifies the starting certificate
 		X509CertSelector selector = new X509CertSelector();
 		selector.setCertificate(cert);
@@ -307,11 +308,13 @@ public class CertificateVerifier {
 
 		final CertPathValidator validator = CertPathValidator.getInstance(CERT_BUILDER_ALG_PKIX);
 		
-		LOG.fine("Validating certificate chain for "+ cert.getSubjectDN().getName());
+		if (isFine) {
+			LOG.fine("Validating certificate chain for "+ cert.getSubjectDN().getName() + " using provider '" + validator.getProvider().getName() + "' with signature '" + pkixParams.getSigProvider() + "' provider");
+		}
 		
 		final CertPathValidatorResult validationResult = validator.validate(certPath, pkixParams);
 		
-		if (LOG.isLoggable(Level.FINE)) {
+		if (isFine) {
 			LOG.fine("Cert chain validation complete successfully. " + validationResult);
 		}
 		
