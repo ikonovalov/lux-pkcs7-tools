@@ -4,7 +4,6 @@ import java.io.FileOutputStream;
 import java.security.Provider;
 import java.security.Provider.Service;
 import java.security.Security;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -44,10 +43,15 @@ public class SignalDecryptAndCheck {
 		System.out.println("===============================================================");
 		
 		System.out.println(new ProductInfo());
-		String keystoreFile = "C:/developer/lib/signalcom/scjcms-sdk-1.2.7/scjcms-sdk-1.2.7/test/pse/keystore.p12";
+		/*String keystoreFile = "C:/developer/lib/signalcom/scjcms-sdk-1.2.7/scjcms-sdk-1.2.7/test/pse/keystore.p12";
 		String password = "111111";
 		String[] signer = new String[]{"ecgost-cp"};
-		String[] recipient = new String[]{"ecgost-cp"};
+		String[] recipient = new String[]{"ecgost-cp"};*/
+		
+		String keystoreFile = "C:/developer/temp/bak_contact/Key#2_2011/store.pfx";
+		String password = "111111";
+		String[] signer = new String[]{"key1"};
+		String[] recipient = new String[]{"CR2", "key1"};
 		
 		CryptoUtils scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.signer(signer).recipients(recipient);
@@ -62,13 +66,14 @@ public class SignalDecryptAndCheck {
 		byte[] encrypted = scutils.encrypt(signedData);
 		System.out.print(" -> Encrypted");
 		
+		
+		//byte[] buffer = Array.readFile("C:/developer/temp/PS_RUR20121115.p7m");
+		
 		byte[] decrypted = scutils.decrypt(encrypted);
 		System.out.print(" -> Decrypt");
 		
 		
-		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
-		scutils.verify(decrypted);
-		System.out.print(" -> Verify");
+		
 		
 		byte[] detached = scutils.detach(decrypted);
 		System.out.println(" -> Detach");
@@ -79,6 +84,10 @@ public class SignalDecryptAndCheck {
 		fos2.close();
 		
 		System.out.println("Result "  + new String(detached)) ;
+		
+		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY | CryptoUtils.OPT_DISABLE_CERT_VALIDATION);
+		scutils.verify(decrypted);
+		System.out.print(" -> Verify");
 		
 	}
 
