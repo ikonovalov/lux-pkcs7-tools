@@ -38,7 +38,7 @@ public class CryptoProDecryptAndCheck {
 		encrypted = CryptoUtils.convertDERtoBASE64(encrypted);
 		
 		CryptoUtils cputilsD = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
-		cputilsD.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY);
+		cputilsD.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_SKIP_SELFSIGNED_CERT);
 		byte[] decrypted = cputilsD.actions(encrypted, null,  CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
 		
 		System.out.println(new String(decrypted));
