@@ -309,6 +309,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
     }
 
     public void verify(byte[] signed) throws Exception {
+    	signed = forceBASE64(signed);
         verify(signed, null);
     }
 
@@ -367,7 +368,8 @@ public final class SignalComCryptoUtils extends CryptoUtils {
      * @throws Exception
      */
     public byte[] decrypt(byte[] ciphertext) throws Exception {
-
+    	ciphertext = forceBASE64(ciphertext);
+    	
     	LOG.fine("Deciphering...");
         InputStream bIn = new ByteArrayInputStream(ciphertext);
 
@@ -382,7 +384,14 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         KeyStore keyStore = getKeyStore();
         while (it.hasNext()) {
             RecipientInfo recInfo = (RecipientInfo) it.next();
-            X509Certificate cert = lookupCertificateBySerialNumber(allStoredCertificates, recInfo.getIssuer(), recInfo.getSerialNumber());
+            X509Certificate cert = null;
+            LOG.fine("Try decrypt for RecipientInfo serial=" + recInfo.getSerialNumber()+ " RI: " + recInfo.getRecipientIdentifier().toString());
+            if (recInfo.getSubjectKeyIdentifier() == null) {
+            	cert = lookupCertificateBySerialNumber(allStoredCertificates, recInfo.getIssuer(), recInfo.getSerialNumber());
+            } else {
+            	cert = lookupCertificateBySubjectKeyIdentefer(allStoredCertificates, recInfo.getSubjectKeyIdentifier());
+            }
+    
             if (cert != null) {
                 PrivateKey priv = (PrivateKey) keyStore.getKey(keyStore.getCertificateAlias(cert), storePassword);
                 if (priv != null) {

@@ -27,29 +27,21 @@ public class CryptoProDecryptAndCheck {
 		PKIXUtils.enableCRLDP(true);
 		PKIXUtils.enableOCSP(true);
 		
-		CryptoUtils cputils = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
+		byte[] sourceData = "bu-bu777888-000-111-222".getBytes();
 		
+		CryptoUtils cputilsE = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		
-		cputils.signer("st1", "luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
+		cputilsE.signer("luxoft-test2","st1", "luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
 		
-		byte[] signedData = cputils.signAttached("bu-bu777888-000-111-222".getBytes());
+		byte[] encrypted = cputilsE.actions(sourceData, "C:\\developer\\temp\\cryptopro_enveloped.p7m", CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
+
+		encrypted = CryptoUtils.convertDERtoBASE64(encrypted);
 		
-		byte[] encrypted = cputils.encrypt(signedData);
+		CryptoUtils cputilsD = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
+		cputilsD.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY);
+		byte[] decrypted = cputilsD.actions(encrypted, null,  CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
 		
-		Array.writeFile("C:\\developer\\temp\\cryptopro_enveloped.p7m", encrypted);
-		
-		byte[] decrypted = cputils.decrypt(encrypted);
-		
-		cputils.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_ALLOW_SELFSIGNED_CERT);
-		cputils.verify(decrypted);
-		System.out.println("Verification OPT_STRONG_POLICY | OPT_ALLOW_SELFSIGNED_CERT");
-		
-		cputils.withVerificationOptions(CryptoUtils.OPT_STRONG_POLICY | CryptoUtils.OPT_SKIP_SELFSIGNED_CERT);
-		cputils.verify(decrypted);
-		System.out.println("Verification OPT_STRONG_POLICY | OPT_SKIP_SELFSIGNED_CERT");
-		
-		byte[] detached = cputils.detach(decrypted);
-		System.out.println(new String(detached));
+		System.out.println(new String(decrypted));
 	}
 
 }

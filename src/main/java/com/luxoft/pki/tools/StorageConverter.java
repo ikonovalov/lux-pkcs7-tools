@@ -12,6 +12,7 @@ import java.util.*;
 
 /**
  * @author Timofey Tishin (timtish@gmail.com)
+ * С использованием элементов кода Григория Панова (http://grigory-panov.blogspot.ru/2012/03/signal-com.html)
  */
 public class StorageConverter {
 

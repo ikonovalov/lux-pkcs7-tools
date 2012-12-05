@@ -1,5 +1,7 @@
 package com.luxoft.pki.tools;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
@@ -19,6 +21,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -33,6 +36,8 @@ import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.SignerIdentifier;
  */
 @SuppressWarnings("restriction")
 public abstract class CryptoUtils {
+	
+	private static final Logger LOG = Logger.getLogger(CryptoUtils.class.getName());
 	
 	private final static ThreadLocal<CertPathBuilder> certPathBuilder = new ThreadLocal<CertPathBuilder>() {
 
@@ -80,6 +85,10 @@ public abstract class CryptoUtils {
 	
 	public abstract byte[] encrypt(byte[] plain) throws Exception;
 	
+	public abstract void verify(byte[] signed) throws Exception;
+	
+	public abstract byte[] signAttached(byte[] data) throws Exception;
+	
 	/**
 	 * Добавление списка получателей сообщения. Используется в RecipientInfo и при генерации ключа сограсования.
 	 * @param recipientsAliases - массив алиасов сертификатов получателей.
@@ -87,9 +96,7 @@ public abstract class CryptoUtils {
 	 * @throws Exception
 	 */
 	public abstract CryptoUtils recipients(String... recipientsAliases) throws Exception;
-	
-	public abstract byte[] signAttached(byte[] data) throws Exception;
-	
+
 	/**
 	 * Добавление подписчиков сообщения. (По списку выбираются PrivateKey из хранилища и подписывают сообщение)
 	 * @param signerAliases - массив алиасов подписчиков
@@ -97,8 +104,6 @@ public abstract class CryptoUtils {
 	 * @throws Exception
 	 */
 	public abstract CryptoUtils signer(String... signerAliases) throws Exception;
-	
-	public abstract void verify(byte[] signed) throws Exception;
 	
 	// =============================================================
 	
@@ -159,7 +164,9 @@ public abstract class CryptoUtils {
 		if (this.keyStore == null) {
 			this.keyStore = keyStore;
 		} else {
-			throw new RuntimeException("KeyStore already set");
+			String msg = "KeyStore already set";
+			LOG.severe(msg);
+			throw new RuntimeException(msg);
 		}
 	}
 	
@@ -289,6 +296,86 @@ public abstract class CryptoUtils {
 			}
 		}
 		return sb.toString();
+	}
+	
+	protected boolean isBase64(byte[] input) {
+		return new String(input).matches("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
+	}
+	
+	public static final byte[] convertBASE64toDER(final byte[] array) {
+		return javax.xml.bind.DatatypeConverter.parseBase64Binary(new String(array));
+	}
+	
+	public static final byte[] convertDERtoBASE64(byte[] array) {
+		return javax.xml.bind.DatatypeConverter.printBase64Binary(array).getBytes();
+	}
+	
+	/**
+	 * Если приши данные в BASE64, то производится снятие кодировки, иначе - просто возвращает исходные данные.
+	 * @param array
+	 * @return
+	 */
+	protected byte[] forceBASE64(byte[] array) {
+		if (isBase64(array)) {
+			LOG.fine("Performing convertation from BASE64 to bytes");
+			return convertBASE64toDER(array);
+		} else {
+			return  array;
+		}
+	}
+	
+	// ------------------------------------------------------------------------------
+	
+	public static final int ACTION_DECRYPT = 100;
+	
+	public static final int ACTION_DETACH = 101;
+	
+	public static final int ACTION_VERIFY = 102;
+	
+	public static final int ACTION_SIGN = 200;
+	
+	public static final int ACTION_ENCRYPT = 201;
+	
+	public byte[] actions(byte[] data, String bufferToFile, int... actions) throws Exception {
+		byte[] buffer = data;
+		for (int act : actions) {
+			switch (act) {
+				case ACTION_DECRYPT: {
+					buffer = decrypt(buffer);
+					break;
+				}
+				case ACTION_DETACH: {
+					buffer = detach(buffer);
+					break;
+				}
+				case ACTION_VERIFY: {
+					verify(buffer);
+					break;
+				}
+				case ACTION_SIGN: {
+					buffer = signAttached(buffer);
+					break;
+				}
+				case ACTION_ENCRYPT: {
+					buffer = encrypt(buffer);
+					break;
+				}
+			}
+		}
+		// store to file
+		if (bufferToFile != null) {
+			FileOutputStream fos = null;
+			try {
+				fos = new FileOutputStream(bufferToFile);
+				fos.write(buffer);
+				fos.flush();
+			} finally {
+				if (fos != null) {
+					fos.close();
+				}
+			}
+		}
+		return buffer;
 	}
 
 }

@@ -162,7 +162,7 @@ public class CertificateVerifier {
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
 			
-			LOG.fine("Start certificate validation (data, crldp, ocsp and so on");
+			LOG.fine("Start certificate validation (data, crldp, ocsp and so on)");
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;
