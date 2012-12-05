@@ -309,6 +309,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
     }
 
     public void verify(byte[] signed) throws Exception {
+    	signed = forceBASE64(signed);
         verify(signed, null);
     }
 
@@ -367,7 +368,8 @@ public final class SignalComCryptoUtils extends CryptoUtils {
      * @throws Exception
      */
     public byte[] decrypt(byte[] ciphertext) throws Exception {
-
+    	ciphertext = forceBASE64(ciphertext);
+    	
     	LOG.fine("Deciphering...");
         InputStream bIn = new ByteArrayInputStream(ciphertext);
 

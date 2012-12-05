@@ -421,7 +421,6 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		signedData.certificates.elements = new CertificateChoices[signerListSize];
 		for (int z = 0; z < signerListSize; z++) {
 			Signer sig = signers.get(z);
-			
 			final Certificate certificate = new Certificate(); // ASN.1
 			final Asn1BerDecodeBuffer decodeBuffer = new Asn1BerDecodeBuffer(sig.getCert().getEncoded());
 			certificate.decode(decodeBuffer);
@@ -508,6 +507,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	public byte[] decrypt(byte[] ciphertext) throws Exception {
+		ciphertext = forceBASE64(ciphertext);
+		
 		//разбор CMS-сообщения
 	    Asn1BerDecodeBuffer dbuf = new Asn1BerDecodeBuffer(ciphertext);
 	    final ContentInfo all = new ContentInfo();
@@ -660,6 +661,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	public void verify(byte[] signed) throws Exception {
+		signed = forceBASE64(signed);
+		
 		final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(signed);
 		final ContentInfo all = new ContentInfo();
 		all.decode(asnBuf);
@@ -872,6 +875,12 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 
 	}
 
+	/**
+	 * Преобразование ru.CryptoPro.JCP.ASN.PKIX1Explicit88.Name в javax.security.auth.x500.X500Principal
+	 * @param issuerName Name в формате ASN.1
+	 * @return X500Principal
+	 * @throws Asn1Exception
+	 */
 	private X500Principal encodeX500Principal(Name issuerName) throws Asn1Exception {
 		final Asn1BerEncodeBuffer encBuf = new Asn1BerEncodeBuffer();
 		issuerName.encode(encBuf);				
@@ -888,6 +897,16 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	    return digest.digest();
 	}
 	
+	/**
+	 * Математическая проверка подписи.
+	 * @param cert - сертификат используемый для проверки 
+	 * @param sign - подпись
+	 * @param text - данные (сама полезная нагрузка)
+	 * @return true - подпись верна, false - подпись не прошла проверку
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws SignatureException
+	 */
 	private static boolean verifySignature(X509Certificate cert, byte[] sign, byte[] text) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		final Signature signature = Signature.getInstance(JCP.GOST_EL_SIGN_NAME);
 		signature.initVerify(cert);
