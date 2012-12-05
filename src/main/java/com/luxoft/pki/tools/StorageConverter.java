@@ -5,7 +5,7 @@ import ru.signalcom.crypto.provider.SignalCOMProvider;
 import java.io.*;
 import java.security.*;
 import java.security.cert.*;
-import java.security.spec.InvalidKeySpecException;
+import java.security.cert.Certificate;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
@@ -15,53 +15,65 @@ import java.util.*;
  */
 public class StorageConverter {
 
+	private static final String PROVIDER = "SC";
+
 	public static void main(String... params) {
-		if (params.length < 3) {
+		if (params.length < 1) {
 			printHelp();
 			return;
 		}
 
-		String rootPath = params[0];
-		String storageFileName = params[1];
-		String passwd = params[2];
+		//Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+		Security.addProvider(new SignalCOMProvider());
 
 		try {
-			//Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-			Security.addProvider(new SignalCOMProvider());
+			if (params.length < 3) {
+				File file = new File(params[0]);
+				String password = params.length > 1 ? params[1] : "";
+				if (file.isDirectory()) {
+					showDirectoryKeyStoreInfo(params[0], PROVIDER);
+				} else {
+					showFileKeyStoreInfo(params[0], password, PROVIDER);
+				}
+				return;
+			}
 
-			// чтение хранилища
-			KeyStore store = readKeyStoreFromFiles(rootPath, passwd, "SC");
+			if (params.length == 3) {
+				String rootPath = params[0];
+				String storageFileName = params[1];
+				String password = params[2];
 
-			// Запись хранилища
-			FileOutputStream out = new FileOutputStream(new File(storageFileName));
-			store.store(out, passwd.toCharArray());
-			out.close();
-			System.out.println("Storage saved to file " + storageFileName + " password: " + passwd);
+				// чтение хранилища
+				KeyStore store = loadKeyStore(storageFileName, password, PROVIDER);
+				addFilesToKeyStore(store, rootPath, password, PROVIDER);
+
+				// запись хранилища
+				FileOutputStream out = new FileOutputStream(new File(storageFileName));
+				store.store(out, password.toCharArray());
+				out.close();
+				System.out.println("Storage saved to file " + storageFileName + " password: " + password);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	private static void printHelp() {
 		System.out.println("Key Storage Converter");
-		System.out.println("params: sourceDirectoryPath storageFileName password");
+		System.out.println("params for convert to PKCS12: sourceDirectoryPath destinationStoreFileName newPassword");
+		System.out.println("params for show storage info: storePath [password]");
 	}
 
-	private static KeyStore readKeyStoreFromFiles(String rootPath, String passwd, String provider) throws GeneralSecurityException, IOException {
-
-		// Инициализация хранилища
-		KeyStore store = KeyStore.getInstance("PKCS#12", provider);
-		store.load(null, null);
+	private static KeyStore addFilesToKeyStore(KeyStore store, String rootPath, String passwd, String provider) throws GeneralSecurityException, IOException {
 
 		// Формирование цепочки сертификатов
 		List<X509Certificate> certificates = new ArrayList<X509Certificate>();
 		Set<X509Certificate> rootCertificates = new HashSet<X509Certificate>();
 		Set<X509Certificate> otherCertificates = new HashSet<X509Certificate>();
-		Map<PrivateKey, String> privateKeys = new HashMap<PrivateKey, String>();
+		List<PrivateKey> privateKeys = new ArrayList<PrivateKey>();
 
+		System.out.println("Key storage list:");
 		// Чтение сертификатов и ключей
-		CertificateFactory cf = CertificateFactory.getInstance("X.509", provider);
 		Queue<File> dirs = new LinkedList<File>();
 		dirs.add(new File(rootPath));
 		while (!dirs.isEmpty()) {
@@ -77,60 +89,57 @@ public class StorageConverter {
 				}
 
 				// чтение сертификата
-				X509Certificate cert;
-				FileInputStream in = new FileInputStream(certFile);
-				try {
-					cert = (X509Certificate) cf.generateCertificate(in);
+				X509Certificate cert = (X509Certificate) readCertificateFromFile(certFile, provider);
+				if (cert != null) {
 					boolean isRoot = PKIXUtils.isSelfSigned(cert);
 
 					certificates.add(cert);
-					System.out.println("cert " + certificates.size() + (isRoot ? " (self signed) " : " ") + cert.getSubjectDN().getName() + " SerialNumber:" + cert.getSerialNumber());
+					System.out.println("cert " + certificates.size() + " " + certFile.getName()
+							+ (isRoot ? " (self signed) " : " ")
+							+ cert.getSubjectDN().getName()
+							+ " SerialNumber:" + cert.getSerialNumber());
 
 					if (isRoot) {
 						rootCertificates.add(cert);
-
-						// добавление самоподписанных в trusted
-						String certAlias = "CA" + rootCertificates.size();
-						store.setCertificateEntry(certAlias, cert);
-						System.out.println("add trusted cert " + certAlias + " [" + cert.getSubjectDN().getName() + "]");
 					} else {
 						otherCertificates.add(cert);
 					}
-					continue;
-				} catch (Exception e) {
-					//System.out.println("Can't read certificate from " + certFile.getName() + " Error: " + e.getLocalizedMessage());
-				} finally {
-					in.close();
-				}
 
-				try {
-					// Чтение секретного ключа PKCS#8
-					KeyFactory keyFac = KeyFactory.getInstance("PKCS#8", provider);
-					byte[] encoded = readAsBytes(certFile);
-					KeySpec privkeySpec = new PKCS8EncodedKeySpec(encoded);
-					PrivateKey priv = keyFac.generatePrivate(privkeySpec);
-					privateKeys.put(priv, certFile.getName());
-				} catch (Exception e) {
-					//System.out.println("Can't read key from " + certFile.getName() + " Error: " + e.getLocalizedMessage());
+					String alias = certFile.getName();
+					if (alias.contains(".")) alias = alias.substring(0, alias.lastIndexOf('.'));
+
+					if (store.containsAlias(alias)) {
+						store.deleteEntry(alias);
+						System.out.println("REWRITE cert " + alias + " [" + cert.getSubjectDN().getName() + "]");
+					} else {
+						System.out.println("ADD cert " + alias + " [" + cert.getSubjectDN().getName() + "]");
+					}
+					store.setCertificateEntry(alias, cert);
+
+				} else {
+
+					PrivateKey priv = readPrivateKeyFromFile(certFile, provider);
+
+					if (priv != null) {
+						privateKeys.add(priv);
+
+						System.out.println("private key " + privateKeys.size() + " " + certFile.getName());
+					}
 				}
 			}
 		}
 
-		if (privateKeys.isEmpty()) {
-			System.out.println("Not found private keys");
-		}
+		for (int keyIndex = 1; keyIndex <= privateKeys.size(); keyIndex++) {
 
-		int keyIndex = 1;
-		for (PrivateKey priv : privateKeys.keySet()) {
 			if (certificates.isEmpty()) throw new IllegalArgumentException("Not found certificates for private key");
 			int selectedIndex;
 			do {
-				System.out.print("select cert for private key " + privateKeys.get(priv) + " [1.." + certificates.size() + "]: ");
+				System.out.print("select cert for private key " + keyIndex + " [1.." + certificates.size() + "]: ");
 				selectedIndex = System.in.read() - '0';
 			} while (selectedIndex < 1 || selectedIndex > certificates.size());
 
-			String alias = "KEY" + (keyIndex++);
 			X509Certificate cert = certificates.get(selectedIndex - 1);
+			String alias = store.getCertificateAlias(cert);
 
 			// Помещение в хранилище секретного ключа с цепочкой сертификатов
 			PKIXCertPathBuilderResult certPath = CertificateVerifier.buildCertificateChain(cert, rootCertificates, otherCertificates, provider);
@@ -138,11 +147,130 @@ public class StorageConverter {
 			X509Certificate[] chainArray = new X509Certificate[certs.size()];
 			for (int i = 0; i < certs.size(); i++) chainArray[i] = certs.get(i);
 
-			System.out.println("add key " + alias + " [password: " + passwd + ", chain length: " + chainArray.length + ", " + cert.getSubjectDN().getName() +"]");
-			store.setKeyEntry(alias, priv, passwd.toCharArray(), chainArray);
+			System.out.println("ADD private key " + alias + " [password: " + passwd + ", chain length: " + chainArray.length + ", " + cert.getSubjectDN().getName() +"]");
+			store.setKeyEntry(alias, privateKeys.get(keyIndex - 1), passwd.toCharArray(), chainArray);
 		}
 
 		return store;
+	}
+
+	private static void showDirectoryKeyStoreInfo(String rootPath, String provider) throws GeneralSecurityException, IOException {
+		Queue<File> dirs = new LinkedList<File>();
+		dirs.add(new File(rootPath));
+		while (!dirs.isEmpty()) {
+			File[] files = dirs.poll().listFiles();
+			if (files == null) continue;
+
+			for (File certFile: files) {
+
+				// обход всех вложенных директорий
+				if (certFile.isDirectory()) {
+					dirs.add(certFile);
+					continue;
+				}
+
+				// чтение сертификата
+				Certificate cert = readCertificateFromFile(certFile, provider);
+				if (cert != null) {
+					if (PKIXUtils.isX509Certificate(cert)) {
+						System.out.println("cert " + certFile.getName()
+								+ (PKIXUtils.isSelfSigned((X509Certificate) cert) ? " (self signed) [" : " [")
+								+ ((X509Certificate) cert).getSubjectDN().getName()
+								+ "] SerialNumber:" + ((X509Certificate) cert).getSerialNumber()
+								+ " " + ((X509Certificate) cert).getSigAlgName());
+					} else {
+						System.out.println("cert " + certFile.getName() + " " + cert.getType());
+					}
+				} else {
+					// чтение ключа
+					PrivateKey priv = readPrivateKeyFromFile(certFile, provider);
+					if (priv != null) {
+						System.out.println("private key " + certFile.getName() + " " + priv.getFormat() + " " + priv.getAlgorithm());
+					}
+				}
+			}
+		}
+	}
+
+	private static void showFileKeyStoreInfo(String filePath, String password, String provider) throws GeneralSecurityException, IOException {
+		KeyStore store = loadKeyStore(filePath, password, provider);
+		if (store == null) return;
+
+		Enumeration<String> aliases = store.aliases();
+		while (aliases.hasMoreElements()) {
+			String alias = aliases.nextElement();
+
+			if (store.isKeyEntry(alias)) {
+				System.out.println("private key " + alias);
+
+				int certIndex = 1;
+				Certificate[] certs = store.getCertificateChain(alias);
+				for (Certificate cert : certs) {
+					if (PKIXUtils.isX509Certificate(cert)) {
+						System.out.println("  " + (certIndex++)  + ". cert "
+								+ (PKIXUtils.isSelfSigned((X509Certificate) cert) ? " (self signed) [" : " [")
+								+ ((X509Certificate) cert).getSubjectDN().getName()
+								+ "] SerialNumber:" + ((X509Certificate) cert).getSerialNumber()
+								+ " " + ((X509Certificate) cert).getSigAlgName());
+					} else {
+						System.out.println("cert " + alias + " " + cert.getType());
+					}
+				}
+			} else if (store.isCertificateEntry(alias)) {
+				Certificate cert = store.getCertificate(alias);
+				if (PKIXUtils.isX509Certificate(cert)) {
+					System.out.println("cert " + alias
+							+ (PKIXUtils.isSelfSigned((X509Certificate) cert) ? " (self signed) [" : " [")
+							+ ((X509Certificate) cert).getSubjectDN().getName()
+							+ "] SerialNumber:" + ((X509Certificate) cert).getSerialNumber()
+							+ " " + ((X509Certificate) cert).getSigAlgName());
+				} else {
+					System.out.println("cert " + alias + " " + cert.getType());
+				}
+			}
+		}
+	}
+
+	private static KeyStore loadKeyStore(String filePath, String password, String provider) throws KeyStoreException, NoSuchProviderException, IOException {
+		KeyStore store = KeyStore.getInstance("PKCS#12", provider);
+
+		File file = new File(filePath);
+		FileInputStream in = new FileInputStream(file);
+		try {
+			store.load(in, password.toCharArray());
+			return store;
+		} catch (GeneralSecurityException e) {
+			throw new IOException("Can't load key store " + e.getLocalizedMessage());
+		} finally {
+			in.close();
+		}
+	}
+
+	private static Certificate readCertificateFromFile(File certFile, String provider) throws IOException {
+		Certificate cert;
+		FileInputStream in = new FileInputStream(certFile);
+		try {
+			CertificateFactory cf = CertificateFactory.getInstance("X.509", provider);
+			cert = cf.generateCertificate(in);
+		} catch (GeneralSecurityException e) {
+			return null;
+		} finally {
+			in.close();
+		}
+		return cert;
+	}
+
+	private static PrivateKey readPrivateKeyFromFile(File certFile, String provider) throws IOException {
+		try {
+			// Чтение секретного ключа PKCS#8
+			KeyFactory keyFac = KeyFactory.getInstance("PKCS#8", provider);
+			byte[] encoded = readAsBytes(certFile);
+			KeySpec privkeySpec = new PKCS8EncodedKeySpec(encoded);
+			PrivateKey priv = keyFac.generatePrivate(privkeySpec);
+			return priv;
+		} catch (GeneralSecurityException e) {
+			return null;
+		}
 	}
 
 	/**
@@ -151,7 +279,7 @@ public class StorageConverter {
 	 * @return
 	 * @throws IOException
 	 */
-	public static byte[] readAsBytes(File file) throws IOException {
+	private static byte[] readAsBytes(File file) throws IOException {
 		List<Byte> result = new ArrayList<Byte>();
 		InputStream stream = new FileInputStream(file);
 		try {
