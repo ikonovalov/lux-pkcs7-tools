@@ -232,10 +232,15 @@ public class StorageConverter {
 		}
 	}
 
-	private static KeyStore loadKeyStore(String filePath, String password, String provider) throws KeyStoreException, NoSuchProviderException, IOException {
+	private static KeyStore loadKeyStore(String filePath, String password, String provider) throws GeneralSecurityException, IOException {
 		KeyStore store = KeyStore.getInstance("PKCS#12", provider);
 
 		File file = new File(filePath);
+		if (!file.exists()) {
+			store.load(null, null);
+			return store;
+		}
+
 		FileInputStream in = new FileInputStream(file);
 		try {
 			store.load(in, password.toCharArray());
