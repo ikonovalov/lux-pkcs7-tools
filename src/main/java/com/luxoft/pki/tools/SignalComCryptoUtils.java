@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import ru.signalcom.crypto.cms.Attribute;
 import ru.signalcom.crypto.cms.AttributeType;
 import ru.signalcom.crypto.cms.CMSException;
+import ru.signalcom.crypto.cms.CipherAlgorithm;
 import ru.signalcom.crypto.cms.ContentInfoParser;
 import ru.signalcom.crypto.cms.ContentType;
 import ru.signalcom.crypto.cms.CounterSignature;
@@ -300,6 +301,9 @@ public final class SignalComCryptoUtils extends CryptoUtils {
 
         @SuppressWarnings("unchecked")
         Collection<SignerInfo> signerInfos = parser.getSignerInfos();
+        if (LOG.isLoggable(Level.FINE)) {
+        	LOG.fine("Total SignerInfo collection size is " + (signerInfos != null ? signerInfos.size() : 0));
+        }
         Iterator<SignerInfo> it = signerInfos.iterator();
         while (it.hasNext()) {
             SignerInfo signerInfo = it.next();
@@ -347,6 +351,8 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
 
         EnvelopedDataGenerator generator = new EnvelopedDataGenerator(bOut, random);
+        
+        generator.setContentEncryptionAlgorithm(CipherAlgorithm.GOST28147); // устаревший алгоритм. Но что поделать.
         generator.addRecipients(recipients);
         OutputStream out = generator.open();
 

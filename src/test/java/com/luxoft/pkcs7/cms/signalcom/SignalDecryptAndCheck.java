@@ -1,14 +1,8 @@
 package com.luxoft.pkcs7.cms.signalcom;
 
-import java.io.FileOutputStream;
-import java.security.Provider;
-import java.security.Provider.Service;
 import java.security.Security;
-import java.util.Iterator;
-import java.util.Set;
 
 import ru.CryptoPro.JCP.tools.Array;
-import ru.signalcom.crypto.cms.ProductInfo;
 import ru.signalcom.crypto.provider.SignalCOMProvider;
 
 import com.luxoft.pki.tools.CryptoUtils;
@@ -36,18 +30,18 @@ public class SignalDecryptAndCheck {
 		
 		String keystoreFile = "C:/developer/temp/bak_contact/Key#2_2011/store.pfx";
 		String password = "123";
-		String[] signer = new String[]{"KEY1"};
-		String[] recipient = new String[]{"KEY1"};
+		String[] signer = new String[]{"cert_16464"};
+		String[] recipient = new String[]{"cert_16464", "cert_3955"};
+		
+		String folder = "C:/developer/temp/";
 		
 		byte[] sourceData = keystoreFile.getBytes();
 		
 		CryptoUtils scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.signer(signer).recipients(recipient);
+		byte[] encrypted = scutils.actions(sourceData, folder + "sygnal_test.encrypted2", CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
 
-		
-		byte[] encrypted = scutils.actions(sourceData, null, CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
-
-		encrypted = Array.readFile("C:/developer/temp/PS_RUR20110711.TXT");
+		encrypted = Array.readFile(folder + "sygnal_test.encrypted2");
 		
 		scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
