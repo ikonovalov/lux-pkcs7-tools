@@ -1,6 +1,5 @@
 package com.luxoft.pki.tools;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -12,7 +11,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
 import java.security.cert.CertStoreException;
-import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;

@@ -7,6 +7,7 @@ import java.security.Security;
 import java.util.Iterator;
 import java.util.Set;
 
+import ru.CryptoPro.JCP.tools.Array;
 import ru.signalcom.crypto.cms.ProductInfo;
 import ru.signalcom.crypto.provider.SignalCOMProvider;
 
@@ -46,7 +47,8 @@ public class SignalDecryptAndCheck {
 		
 		byte[] encrypted = scutils.actions(sourceData, null, CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
 
-
+		encrypted = Array.readFile("C:/developer/temp/PS_RUR20110711.TXT");
+		
 		scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
 		byte[] buffer = scutils.actions(encrypted, null, CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
