@@ -39,13 +39,14 @@ public class SignalDecryptAndCheck {
 		
 		CryptoUtils scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.signer(signer).recipients(recipient);
-		byte[] encrypted = scutils.actions(sourceData, folder + "sygnal_test.encrypted2", CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
+		byte[] encrypted = scutils.actions(sourceData, folder + "sygnal_test.encrypted2", "sign -> encrypt");
 
 		encrypted = Array.readFile(folder + "sygnal_test.encrypted2");
 		
 		scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
-		byte[] buffer = scutils.actions(encrypted, null, CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
+		//byte[] buffer = scutils.actions(encrypted, null, CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
+		byte[] buffer = scutils.actions(encrypted, null, "decrypt -> verify -> detach");
 	
 		System.out.println("Result "  + new String(buffer)) ;
 		

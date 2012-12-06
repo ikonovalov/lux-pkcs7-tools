@@ -113,8 +113,12 @@ public abstract class CryptoUtils {
 		return this.verificationOptions;
 	}
 	
+	private final boolean isFlagSet(int combined, int flagbitN) {
+		return (combined & flagbitN) == flagbitN;
+	}
+	
 	protected final boolean isFlagSet(int flagbitN) {
-		return (verificationOptions & flagbitN) == flagbitN;
+		return isFlagSet(verificationOptions, flagbitN);
 	}
 	
 	protected final boolean isFlagNotSet(int flagbitN) {
@@ -324,39 +328,69 @@ public abstract class CryptoUtils {
 	
 	// ------------------------------------------------------------------------------
 	
-	public static final int ACTION_DECRYPT = 100;
+	public enum Action {
+		
+		DECRYPT(1, "decrypt"),
+		DETACH(2, "detach"),
+		VERIFY(4, "verify"),
+		SIGN(8, "sign"),
+		ENCRYPT(16, "encrypt");
+		private int code = 0;
+		private String name = null;
+		private Action(int code, String name) {
+			this.code = code;
+			this.name = name;
+		}
+		public static final String SPLITTER =  "->";
+	}
 	
-	public static final int ACTION_DETACH = 101;
+	public static final int ACTION_DECRYPT = 1; // decrypt
 	
-	public static final int ACTION_VERIFY = 102;
+	public static final int ACTION_DETACH = 2; // detach
 	
-	public static final int ACTION_SIGN = 200;
+	public static final int ACTION_VERIFY = 4; // verify
 	
-	public static final int ACTION_ENCRYPT = 201;
+	public static final int ACTION_SIGN = 8; // sign
+	
+	public static final int ACTION_ENCRYPT = 16; // encrypt
+	
+	public byte[] actions(byte[] data, String bufferToFile, String command) throws Exception {
+		int[] actions = null;
+		final String[] splits = command.split(Action.SPLITTER);
+		actions = new int[splits.length];
+		for (int z = 0; z < splits.length; z++) {
+			Action enumAct = Action.valueOf(splits[z].trim().toUpperCase());
+			actions[z] = enumAct.code;
+		}
+		
+		return actions(data, bufferToFile, actions);
+	}
 	
 	public byte[] actions(byte[] data, String bufferToFile, int... actions) throws Exception {
 		byte[] buffer = data;
-		for (int act : actions) {
-			switch (act) {
-				case ACTION_DECRYPT: {
-					buffer = decrypt(buffer);
-					break;
-				}
-				case ACTION_DETACH: {
-					buffer = detach(buffer);
-					break;
-				}
-				case ACTION_VERIFY: {
-					verify(buffer);
-					break;
-				}
-				case ACTION_SIGN: {
-					buffer = signAttached(buffer);
-					break;
-				}
-				case ACTION_ENCRYPT: {
-					buffer = encrypt(buffer);
-					break;
+		if (actions != null) {
+			for (int act : actions) {
+				switch (act) {
+					case ACTION_DECRYPT: {
+						buffer = decrypt(buffer);
+						break;
+					}
+					case ACTION_DETACH: {
+						buffer = detach(buffer);
+						break;
+					}
+					case ACTION_VERIFY: {
+						verify(buffer);
+						break;
+					}
+					case ACTION_SIGN: {
+						buffer = signAttached(buffer);
+						break;
+					}
+					case ACTION_ENCRYPT: {
+						buffer = encrypt(buffer);
+						break;
+					}
 				}
 			}
 		}
