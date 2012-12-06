@@ -1,6 +1,8 @@
 package com.luxoft.pki.tools;
 
 import ru.signalcom.crypto.provider.SignalCOMProvider;
+import sun.security.jgss.LoginConfigImpl;
+import sun.util.LocaleServiceProviderPool;
 
 import java.io.*;
 import java.security.*;
@@ -95,7 +97,7 @@ public class StorageConverter {
 					boolean isRoot = PKIXUtils.isSelfSigned(cert);
 
 					certificates.add(cert);
-					System.out.println("cert " + certificates.size() + " " + certFile.getName()
+					System.out.println("\ncert #" + certificates.size() + " " + certFile.getName()
 							+ (isRoot ? " (self signed) " : " ")
 							+ cert.getSubjectDN().getName()
 							+ " SerialNumber:" + cert.getSerialNumber());
@@ -111,9 +113,9 @@ public class StorageConverter {
 
 					if (store.containsAlias(alias)) {
 						store.deleteEntry(alias);
-						System.out.println("REWRITE cert " + alias + " [" + cert.getSubjectDN().getName() + "]");
+						System.out.println("REWRITE cert \"" + alias + "\"");
 					} else {
-						System.out.println("ADD cert " + alias + " [" + cert.getSubjectDN().getName() + "]");
+						System.out.println("ADD cert \"" + alias + "\"");
 					}
 					store.setCertificateEntry(alias, cert);
 
@@ -124,7 +126,7 @@ public class StorageConverter {
 					if (priv != null) {
 						privateKeys.add(priv);
 
-						System.out.println("private key " + privateKeys.size() + " " + certFile.getName());
+						System.out.println("\nprivate KEY #" + privateKeys.size() + " " + certFile.getName());
 					}
 				}
 			}
@@ -135,7 +137,7 @@ public class StorageConverter {
 			if (certificates.isEmpty()) throw new IllegalArgumentException("Not found certificates for private key");
 			int selectedIndex;
 			do {
-				System.out.print("select cert for private key " + keyIndex + " [1.." + certificates.size() + "]: ");
+				System.out.print("select cert for private KEY #" + keyIndex + " [1.." + certificates.size() + "]: ");
 				selectedIndex = System.in.read() - '0';
 			} while (selectedIndex < 1 || selectedIndex > certificates.size());
 
@@ -143,12 +145,19 @@ public class StorageConverter {
 			String alias = store.getCertificateAlias(cert);
 
 			// Помещение в хранилище секретного ключа с цепочкой сертификатов
-			PKIXCertPathBuilderResult certPath = CertificateVerifier.buildCertificateChain(cert, rootCertificates, otherCertificates, provider);
-			List<X509Certificate> certs = (List<X509Certificate>) certPath.getCertPath().getCertificates();
-			X509Certificate[] chainArray = new X509Certificate[certs.size()];
-			for (int i = 0; i < certs.size(); i++) chainArray[i] = certs.get(i);
+			X509Certificate[] chainArray;
+			try {
+				PKIXCertPathBuilderResult certPath = CertificateVerifier.buildCertificateChain(cert, rootCertificates, otherCertificates, provider);
+				List<X509Certificate> certs = (List<X509Certificate>) certPath.getCertPath().getCertificates();
+				chainArray = new X509Certificate[certs.size()];
+				for (int i = 0; i < certs.size(); i++) chainArray[i] = certs.get(i);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("!!!!! WARNING !!!!! UNABLE TO FIND VALID CERTIFICATE CHAIN FOR PRIVATE KEY !!!!!");
+				chainArray = new X509Certificate[]{cert};
+			}
 
-			System.out.println("ADD private key " + alias + " [password: " + passwd + ", chain length: " + chainArray.length + ", " + cert.getSubjectDN().getName() +"]");
+			System.out.println("ADD private key \"" + alias + "\" [password: " + passwd + ", chain length: " + chainArray.length + ", " + cert.getSubjectDN().getName() +"]");
 			store.setKeyEntry(alias, privateKeys.get(keyIndex - 1), passwd.toCharArray(), chainArray);
 		}
 
