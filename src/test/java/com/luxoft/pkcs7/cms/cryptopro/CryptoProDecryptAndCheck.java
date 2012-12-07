@@ -1,11 +1,5 @@
 package com.luxoft.pkcs7.cms.cryptopro;
 
-import java.security.Provider;
-import java.security.Security;
-
-import ru.CryptoPro.JCP.tools.Array;
-import ru.signalcom.crypto.provider.SignalCOMProvider;
-
 import com.luxoft.pki.tools.CryptoProCryptoUtils;
 import com.luxoft.pki.tools.CryptoUtils;
 import com.luxoft.pki.tools.PKIXUtils;
@@ -16,7 +10,6 @@ public class CryptoProDecryptAndCheck {
 	 * @param args
 	 * @throws Exception 
 	 */
-	@SuppressWarnings("restriction")
 	public static void main(String[] args) throws Exception {
 		
 		//Security.addProvider(new SignalCOMProvider());
@@ -24,8 +17,7 @@ public class CryptoProDecryptAndCheck {
 		System.setProperty("http.proxyHost", "localhost");
 		System.setProperty("http.proxyPort", "8081");  
 		
-		PKIXUtils.enableCRLDP(true);
-		PKIXUtils.enableOCSP(true);
+		PKIXUtils.switchOnOCSPandCRLDP();
 		
 		byte[] sourceData = "bu-bu777888-000-111-222".getBytes();
 		

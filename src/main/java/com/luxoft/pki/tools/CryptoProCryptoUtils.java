@@ -102,7 +102,6 @@ import com.objsys.asn1j.runtime.Asn1Type;
  * @author Igor Konovalov ikonovalov@luxoft.com
  * 
  */
-@SuppressWarnings("restriction")
 public class CryptoProCryptoUtils extends CryptoUtils {
 
 	public static final String ENVELOPED_DATA_OID = "1.2.840.113549.1.7.3";
@@ -384,7 +383,6 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		return contentInfoEncodeBuffer.getMsgCopy();
 	}
 	
-	@SuppressWarnings("restriction")
 	public ContentInfo _signAttached(byte[] data) throws Exception {
 		/*
 		 *  SignedData ::= SEQUENCE {

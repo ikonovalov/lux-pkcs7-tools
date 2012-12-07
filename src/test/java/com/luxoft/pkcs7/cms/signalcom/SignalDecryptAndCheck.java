@@ -1,5 +1,7 @@
 package com.luxoft.pkcs7.cms.signalcom;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.security.Security;
 
 import ru.CryptoPro.JCP.tools.Array;
@@ -18,9 +20,8 @@ public class SignalDecryptAndCheck {
 		System.setProperty("http.proxyHost", "192.168.5.15");
 		System.setProperty("http.proxyPort", "8080"); 
 		
-		PKIXUtils.enableCRLDP(true);
-		PKIXUtils.enableOCSP(true);
-		
+		PKIXUtils.switchOnOCSPandCRLDP();
+
 		System.out.println("===============================================================");
 
 		/*String keystoreFile = "C:/developer/lib/signalcom/scjcms-sdk-1.2.7/scjcms-sdk-1.2.7/test/pse/keystore.p12";
@@ -43,10 +44,16 @@ public class SignalDecryptAndCheck {
 
 		encrypted = Array.readFile(folder + "sygnal_test.encrypted2");
 		
+		File f = new File(folder + "sygnal_test.encrypted2");
+		FileInputStream fis = new FileInputStream(f);
+		byte[] buffer = new byte[(int) f.length()];
+		fis.read(buffer);
+		encrypted = buffer;
+		
 		scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.withVerificationOptions(CryptoUtils.OPT_STORED_CERT_ONLY);
 		//byte[] buffer = scutils.actions(encrypted, null, CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
-		byte[] buffer = scutils.actions(encrypted, null, "decrypt -> verify -> detach");
+		buffer = scutils.actions(encrypted, null, "decrypt -> verify -> detach");
 	
 		System.out.println("Result "  + new String(buffer)) ;
 		
