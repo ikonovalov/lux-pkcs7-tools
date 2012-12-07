@@ -68,6 +68,25 @@ public abstract class CryptoUtils {
 	
 	public final static int OPT_STRONG_POLICY = OPT_STORED_CERT_ONLY;
 	
+	public enum VerificationOpetion {
+		
+		ALL_FLAGS_DOWN(OPT_ALL_FLAGS_DOWN, "ALL_FLAGS_DOWN"),
+		STORED_CERT_ONLY(OPT_STORED_CERT_ONLY, "STORED_CERT_ONLY"),
+		ALLOW_SELFSIGNED_CERT(OPT_ALLOW_SELFSIGNED_CERT, "ALLOW_SELFSIGNED_CERT"),
+		SKIP_SELFSIGNED_CERT(OPT_SKIP_SELFSIGNED_CERT, "SKIP_SELFSIGNED_CERT"),
+		DISABLE_CERT_VALIDATION(OPT_DISABLE_CERT_VALIDATION, "DISABLE_CERT_VALIDATION"),
+		STRONG_POLICY(OPT_STRONG_POLICY, "STRONG_POLICY");
+		
+		private int code = 0;
+		private String name = null;
+		private VerificationOpetion(int code, String name) {
+			this.code = code;
+			this.name = name;
+		}
+		
+		public final static String splitter = ",";
+	}
+	
 	// --- ABSTRACT PART -------------------------------------------
 	public static CertPathBuilder getCertPathBuilder() {
 		return certPathBuilder.get();
@@ -104,6 +123,19 @@ public abstract class CryptoUtils {
 	public abstract CryptoUtils signer(String... signerAliases) throws Exception;
 	
 	// =============================================================
+	
+	public final int withVerificationOptions(String combination) {
+		if (combination == null) {
+			return withVerificationOptions(OPT_ALL_FLAGS_DOWN);
+		}
+		int[] res = null;
+		String[] splitted = combination.split(VerificationOpetion.splitter);
+		res = new int[splitted.length];
+		for (int z = 0; z < splitted.length; z++) {
+			res[z] = VerificationOpetion.valueOf(splitted[z]).code;
+		}
+		return withVerificationOptions(res);
+	}
 	
 	public final int withVerificationOptions(int... flags) {
 		this.verificationOptions = OPT_ALL_FLAGS_DOWN;
@@ -330,11 +362,11 @@ public abstract class CryptoUtils {
 	
 	public enum Action {
 		
-		DECRYPT(1, "decrypt"),
-		DETACH(2, "detach"),
-		VERIFY(4, "verify"),
-		SIGN(8, "sign"),
-		ENCRYPT(16, "encrypt");
+		DECRYPT(ACTION_DECRYPT, "decrypt"),
+		DETACH(ACTION_DETACH, "detach"),
+		VERIFY(ACTION_VERIFY, "verify"),
+		SIGN(ACTION_SIGN, "sign"),
+		ENCRYPT(ACTION_ENCRYPT, "encrypt");
 		private int code = 0;
 		private String name = null;
 		private Action(int code, String name) {
