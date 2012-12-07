@@ -252,7 +252,6 @@ public class CertificateVerifier {
 		pkixParams.setSigProvider(provider);
 
 		// Build and verify the certification chain
-		CryptoUtils.setCertPathBuilder(CertPathBuilder.getInstance("PKIX", provider));
 		CertPathBuilder builder = CryptoUtils.getCertPathBuilder();
 		PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
 		int certPathLen = result.getCertPath().getCertificates().size();

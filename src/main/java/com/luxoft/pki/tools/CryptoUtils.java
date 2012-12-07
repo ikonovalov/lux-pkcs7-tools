@@ -132,7 +132,7 @@ public abstract class CryptoUtils {
 		String[] splitted = combination.split(VerificationOpetion.splitter);
 		res = new int[splitted.length];
 		for (int z = 0; z < splitted.length; z++) {
-			res[z] = VerificationOpetion.valueOf(splitted[z]).code;
+			res[z] = VerificationOpetion.valueOf(splitted[z].trim()).code;
 		}
 		return withVerificationOptions(res);
 	}

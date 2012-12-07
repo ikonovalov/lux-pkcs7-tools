@@ -1,16 +1,33 @@
 package com.luxoft.pki.tools;
 
-import ru.signalcom.crypto.provider.SignalCOMProvider;
-import sun.security.jgss.LoginConfigImpl;
-import sun.util.LocaleServiceProviderPool;
-
-import java.io.*;
-import java.security.*;
-import java.security.cert.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.cert.PKIXCertPathBuilderResult;
+import java.security.cert.X509Certificate;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+
+import ru.signalcom.crypto.provider.SignalCOMProvider;
 
 /**
  * @author Timofey Tishin (timtish@gmail.com)
@@ -20,7 +37,7 @@ public class StorageConverter {
 
 	private static final String PROVIDER = "SC";
 
-	public static void main(String... params) {
+	public static void main(String... params) throws NoSuchAlgorithmException, NoSuchProviderException {
 		if (params.length < 1) {
 			printHelp();
 			return;
@@ -28,7 +45,7 @@ public class StorageConverter {
 
 		//Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		Security.addProvider(new SignalCOMProvider());
-
+		CryptoUtils.setCertPathBuilder(CertPathBuilder.getInstance("PKIX", "SC"));
 		try {
 			if (params.length < 3) {
 				File file = new File(params[0]);
