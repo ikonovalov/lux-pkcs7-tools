@@ -16,6 +16,8 @@ public class SignalDecryptAndCheck {
 	public static void main(String[] args) throws Exception {
 		
 		Security.addProvider(new SignalCOMProvider());
+		Security.addProvider(new SignalCOMProvider());
+		
 		
 		System.setProperty("http.proxyHost", "192.168.5.15");
 		System.setProperty("http.proxyPort", "8080"); 
