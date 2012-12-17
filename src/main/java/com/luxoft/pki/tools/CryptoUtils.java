@@ -187,7 +187,7 @@ public abstract class CryptoUtils {
 	 * Получение текущего хранилища ключей и сертификатов X509
 	 * @return KeyStore
 	 */
-	protected final KeyStore getKeyStore() {
+	public final KeyStore getKeyStore() {
 		return keyStore;
 	}
 	
