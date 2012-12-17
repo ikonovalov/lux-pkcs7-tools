@@ -14,8 +14,8 @@ public class CryptoProDecryptAndCheck {
 		
 		//Security.addProvider(new SignalCOMProvider());
 		
-		System.setProperty("http.proxyHost", "localhost");
-		System.setProperty("http.proxyPort", "8081");  
+		System.setProperty("http.proxyHost", "192.168.5.15");
+		System.setProperty("http.proxyPort", "8080");  
 		
 		PKIXUtils.switchOnOCSPandCRLDP();
 		
@@ -34,6 +34,9 @@ public class CryptoProDecryptAndCheck {
 		byte[] decrypted = cputilsD.actions(encrypted, null,  CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
 		
 		System.out.println(new String(decrypted));
+		
+		System.out.println(cputilsD.getAllAliases().toString());
+		System.out.println(cputilsD.getAllKeyAliases().toString());
 	}
 
 }

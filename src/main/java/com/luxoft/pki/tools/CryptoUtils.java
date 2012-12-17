@@ -16,6 +16,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -220,6 +221,36 @@ public abstract class CryptoUtils {
 			certs.add(cert);
 		}
 		return PKIXUtils.createCertStoreFromList(certs);
+	}
+	
+	/**
+	 * Получить список алиасов всех сертификатов.
+	 * @return List<String>
+	 * @throws KeyStoreException
+	 */
+	public List<String> getAllAliases() throws KeyStoreException {
+		Enumeration<String> aliasesEnum = getKeyStore().aliases();
+		List<String> listAliases = new ArrayList<String>();
+		while(aliasesEnum.hasMoreElements()) {
+			listAliases.add(aliasesEnum.nextElement());
+		}
+		return listAliases;
+	}
+	
+	/**
+	 * Получение списка только алиасов с ключами.
+	 * @return List<String>
+	 * @throws KeyStoreException
+	 */
+	public List<String> getAllKeyAliases() throws KeyStoreException {
+		List<String> allAliases = getAllAliases();
+		List<String> onlyKeyAliases = new ArrayList<String>();
+		for (String allAelement : allAliases) {
+			if (getKeyStore().isKeyEntry(allAelement)) {
+				onlyKeyAliases.add(allAelement);
+			}
+		}
+		return onlyKeyAliases;
 	}
 	
 	/**
