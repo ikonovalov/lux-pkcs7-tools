@@ -5,6 +5,7 @@
   <version>0.1.0</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <cryptopro.libs.path>${java.home}/lib/ext</cryptopro.libs.path>
   </properties>
   <dependencies>
   	<dependency>
@@ -22,6 +23,34 @@
   		<artifactId>sc-cms</artifactId>
   		<version>1.2.7</version>
   	</dependency>
+    <dependency>
+      <groupId>ru.CryptoPro</groupId>
+      <artifactId>JCP</artifactId>
+      <version>1.0.53</version>
+      <scope>system</scope>
+      <systemPath>${cryptopro.libs.path}/JCP.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>ru.CryptoPro</groupId>
+      <artifactId>ASN1P</artifactId>
+      <version>1.0.53</version>
+      <scope>system</scope>
+      <systemPath>${cryptopro.libs.path}/ASN1P.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>ru.CryptoPro</groupId>
+      <artifactId>asn1rt</artifactId>
+      <version>1.0.53</version>
+      <scope>system</scope>
+      <systemPath>${cryptopro.libs.path}/asn1rt.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>ru.CryptoPro</groupId>
+      <artifactId>JCryptoP</artifactId>
+      <version>1.0.53</version>
+      <scope>system</scope>
+      <systemPath>${cryptopro.libs.path}/JCryptoP.jar</systemPath>
+    </dependency>
   </dependencies>
   <name>Luxoft-PKCS7-tools</name>
   <description>This project help me to solve problem deals with CryptoPro JCP on IBM J9.
