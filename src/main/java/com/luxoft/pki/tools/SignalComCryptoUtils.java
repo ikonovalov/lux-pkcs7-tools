@@ -324,7 +324,7 @@ public final class SignalComCryptoUtils extends CryptoUtils {
      * @throws Exception
      */
     public byte[] detach(byte[] signed) throws Exception {
-
+    	signed = forceBASE64(signed);
     	LOG.fine("Data detaching...");
         SignedDataParser parser = new SignedDataParser(new ByteArrayInputStream(signed));
         InputStream content = parser.getContent(false);

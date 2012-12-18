@@ -30,15 +30,9 @@ public class CryptoProDecryptAndCheck {
 		
 		byte[] encrypted = cputilsE.actions(sourceData, "C:\\developer\\temp\\cryptopro_enveloped.p7m", CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
 		
-		//
-		File f = new File("C:\\developer\\temp\\V002181221.p7m");
-		FileInputStream fis = new FileInputStream(f);
-		byte[] buffer = new byte[(int) f.length()];
-		fis.read(buffer);
-		fis.close();
-		//
+		
 
-		encrypted = buffer;//CryptoUtils.convertDERtoBASE64(encrypted);
+		encrypted = CryptoUtils.convertDERtoBASE64(encrypted);
 		
 		CryptoUtils cputilsD = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		cputilsD.withVerificationOptions("STORED_CERT_ONLY, SKIP_SELFSIGNED_CERT");
@@ -49,7 +43,19 @@ public class CryptoProDecryptAndCheck {
 		System.out.println(cputilsD.getAllAliases().toString());
 		System.out.println(cputilsD.getAllKeyAliases().toString());
 		
+		//V002121221.p7s
 		
+		//
+		File f = new File("C:\\developer\\temp\\V002121221.p7s");
+		FileInputStream fis = new FileInputStream(f);
+		byte[] buffer = new byte[(int) f.length()];
+		fis.read(buffer);
+		fis.close();
+		//
+		
+		CryptoUtils cputilsS = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
+		cputilsS.withVerificationOptions("STORED_CERT_ONLY, SKIP_SELFSIGNED_CERT");
+		byte[] b = cputilsD.actions(buffer, null, CryptoUtils.ACTION_DETACH);
 		
 	}
 

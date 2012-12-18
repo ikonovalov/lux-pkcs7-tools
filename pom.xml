@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>lux.pkcs7.tools</groupId>
   <artifactId>lux.pkcs7.tools</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.1</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <cryptopro.libs.path>${java.home}/lib/ext</cryptopro.libs.path>

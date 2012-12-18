@@ -639,7 +639,8 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		return res;
 	}
 
-	public byte[] detach(final byte[] signed) throws Exception {
+	public byte[] detach(byte[] signed) throws Exception {
+		signed = forceBASE64(signed);
 		final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(signed);
 		final ContentInfo all = new ContentInfo();
 		all.decode(asnBuf);
