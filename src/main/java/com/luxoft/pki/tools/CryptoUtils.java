@@ -363,8 +363,8 @@ public abstract class CryptoUtils {
 		return sb.toString();
 	}
 	
-	protected boolean isBase64(byte[] input) {
-		return new String(input).matches("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
+	public static boolean isBase64(byte[] input) {
+		return new String(input).replaceAll("\\s", "").matches("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
 	}
 	
 	public static final byte[] convertBASE64toDER(final byte[] array) {

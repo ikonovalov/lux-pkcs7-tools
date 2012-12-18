@@ -1,5 +1,8 @@
 package com.luxoft.pkcs7.cms.cryptopro;
 
+import java.io.File;
+import java.io.FileInputStream;
+
 import com.luxoft.pki.tools.CryptoProCryptoUtils;
 import com.luxoft.pki.tools.CryptoUtils;
 import com.luxoft.pki.tools.PKIXUtils;
@@ -26,8 +29,16 @@ public class CryptoProDecryptAndCheck {
 		cputilsE.signer("luxoft-test2","st1", "luxoft-test1").recipients("st2", "barankevich2012.cer", "pivsaeva_2012_tcs");
 		
 		byte[] encrypted = cputilsE.actions(sourceData, "C:\\developer\\temp\\cryptopro_enveloped.p7m", CryptoUtils.ACTION_SIGN, CryptoUtils.ACTION_ENCRYPT);
+		
+		//
+		File f = new File("C:\\developer\\temp\\V002181221.p7m");
+		FileInputStream fis = new FileInputStream(f);
+		byte[] buffer = new byte[(int) f.length()];
+		fis.read(buffer);
+		fis.close();
+		//
 
-		encrypted = CryptoUtils.convertDERtoBASE64(encrypted);
+		encrypted = buffer;//CryptoUtils.convertDERtoBASE64(encrypted);
 		
 		CryptoUtils cputilsD = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		cputilsD.withVerificationOptions("STORED_CERT_ONLY, SKIP_SELFSIGNED_CERT");
@@ -37,6 +48,9 @@ public class CryptoProDecryptAndCheck {
 		
 		System.out.println(cputilsD.getAllAliases().toString());
 		System.out.println(cputilsD.getAllKeyAliases().toString());
+		
+		
+		
 	}
 
 }
