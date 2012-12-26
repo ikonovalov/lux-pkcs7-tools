@@ -1,4 +1,4 @@
-package com.luxoft.pkcs7.cms.signalcom;
+package org.lu.pkcs7.cms.signalcom;
 
 import java.io.File;
 import java.io.FileInputStream;

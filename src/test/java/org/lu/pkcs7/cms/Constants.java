@@ -1,4 +1,4 @@
-package com.luxoft.pkcs7.cms;
+package org.lu.pkcs7.cms;
 
 import ru.CryptoPro.JCP.JCP;
 

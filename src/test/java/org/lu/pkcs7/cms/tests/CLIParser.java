@@ -1,4 +1,4 @@
-package com.luxoft.pkcs7.cms.tests;
+package org.lu.pkcs7.cms.tests;
 
 import java.util.Arrays;
 import java.util.HashMap;
