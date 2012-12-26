@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.security.Security;
 
+import org.lu.pki.tools.CryptoUtils;
+import org.lu.pki.tools.PKIXUtils;
+import org.lu.pki.tools.SignalComCryptoUtils;
+
 import ru.CryptoPro.JCP.tools.Array;
 import ru.signalcom.crypto.provider.SignalCOMProvider;
 
-import com.luxoft.pki.tools.CryptoUtils;
-import com.luxoft.pki.tools.PKIXUtils;
-import com.luxoft.pki.tools.SignalComCryptoUtils;
 
 public class SignalDecryptAndCheck {
 

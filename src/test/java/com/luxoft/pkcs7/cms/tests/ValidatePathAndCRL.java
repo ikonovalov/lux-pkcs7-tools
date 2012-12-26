@@ -11,10 +11,11 @@ import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-import com.luxoft.pki.tools.CertificateVerificationException;
-import com.luxoft.pki.tools.CertificateVerificationResult;
-import com.luxoft.pki.tools.CertificateVerifier;
-import com.luxoft.pki.tools.PKIXUtils;
+import org.lu.pki.tools.CertificateVerificationException;
+import org.lu.pki.tools.CertificateVerificationResult;
+import org.lu.pki.tools.CertificateVerifier;
+import org.lu.pki.tools.PKIXUtils;
+
 
 public class ValidatePathAndCRL {
 	

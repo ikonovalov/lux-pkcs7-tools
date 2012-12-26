@@ -5,7 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.luxoft.pki.tools.CryptoUtils;
+import org.lu.pki.tools.CryptoUtils;
+
 
 public class CheckBase64 {
 

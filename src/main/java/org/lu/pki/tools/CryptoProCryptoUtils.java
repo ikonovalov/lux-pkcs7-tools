@@ -1,4 +1,4 @@
-package com.luxoft.pki.tools;
+package org.lu.pki.tools;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

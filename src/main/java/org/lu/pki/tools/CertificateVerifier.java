@@ -1,16 +1,16 @@
-package com.luxoft.pki.tools;
+package org.lu.pki.tools;
 
-import static com.luxoft.pki.tools.PKIXUtils.chechValidDate;
-import static com.luxoft.pki.tools.PKIXUtils.downloadCRLFromWebDP;
-import static com.luxoft.pki.tools.PKIXUtils.getAuthorityInformationAccess;
-import static com.luxoft.pki.tools.PKIXUtils.getCrlDistributionPoints;
-import static com.luxoft.pki.tools.PKIXUtils.isIBMJ9;
-import static com.luxoft.pki.tools.PKIXUtils.isIbmCRLDPEnabled;
-import static com.luxoft.pki.tools.PKIXUtils.isIndirectCRL;
-import static com.luxoft.pki.tools.PKIXUtils.isOCSPEnabled;
-import static com.luxoft.pki.tools.PKIXUtils.isSelfSigned;
-import static com.luxoft.pki.tools.PKIXUtils.isSunCRLDPEnabled;
-import static com.luxoft.pki.tools.PKIXUtils.isX509Certificate;
+import static org.lu.pki.tools.PKIXUtils.chechValidDate;
+import static org.lu.pki.tools.PKIXUtils.downloadCRLFromWebDP;
+import static org.lu.pki.tools.PKIXUtils.getAuthorityInformationAccess;
+import static org.lu.pki.tools.PKIXUtils.getCrlDistributionPoints;
+import static org.lu.pki.tools.PKIXUtils.isIBMJ9;
+import static org.lu.pki.tools.PKIXUtils.isIbmCRLDPEnabled;
+import static org.lu.pki.tools.PKIXUtils.isIndirectCRL;
+import static org.lu.pki.tools.PKIXUtils.isOCSPEnabled;
+import static org.lu.pki.tools.PKIXUtils.isSelfSigned;
+import static org.lu.pki.tools.PKIXUtils.isSunCRLDPEnabled;
+import static org.lu.pki.tools.PKIXUtils.isX509Certificate;
 
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;

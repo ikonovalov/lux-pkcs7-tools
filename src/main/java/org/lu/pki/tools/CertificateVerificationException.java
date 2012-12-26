@@ -1,4 +1,4 @@
-package com.luxoft.pki.tools;
+package org.lu.pki.tools;
 
 /**
  * This class wraps an exception that could be thrown during the certificate

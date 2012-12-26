@@ -3,9 +3,10 @@ package com.luxoft.pkcs7.cms.cryptopro;
 import java.io.File;
 import java.io.FileInputStream;
 
-import com.luxoft.pki.tools.CryptoProCryptoUtils;
-import com.luxoft.pki.tools.CryptoUtils;
-import com.luxoft.pki.tools.PKIXUtils;
+import org.lu.pki.tools.CryptoProCryptoUtils;
+import org.lu.pki.tools.CryptoUtils;
+import org.lu.pki.tools.PKIXUtils;
+
 
 public class CryptoProDecryptAndCheck {
 
@@ -17,8 +18,8 @@ public class CryptoProDecryptAndCheck {
 		
 		//Security.addProvider(new SignalCOMProvider());
 		
-		System.setProperty("http.proxyHost", "192.168.5.15");
-		System.setProperty("http.proxyPort", "8080");  
+		//System.setProperty("http.proxyHost", "192.168.5.15");
+		//System.setProperty("http.proxyPort", "8080");  
 		
 		PKIXUtils.switchOnOCSPandCRLDP();
 		
@@ -55,7 +56,9 @@ public class CryptoProDecryptAndCheck {
 		
 		CryptoUtils cputilsS = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
 		cputilsS.withVerificationOptions("STORED_CERT_ONLY, SKIP_SELFSIGNED_CERT");
-		byte[] b = cputilsD.actions(buffer, null, CryptoUtils.ACTION_DETACH);
+		byte[] b = cputilsD.actions(buffer, null, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
+		
+		System.out.println(new String(b));
 		
 	}
 
