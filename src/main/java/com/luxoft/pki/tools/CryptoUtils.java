@@ -16,7 +16,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -397,7 +396,8 @@ public abstract class CryptoUtils {
 		DETACH(ACTION_DETACH, "detach"),
 		VERIFY(ACTION_VERIFY, "verify"),
 		SIGN(ACTION_SIGN, "sign"),
-		ENCRYPT(ACTION_ENCRYPT, "encrypt");
+		ENCRYPT(ACTION_ENCRYPT, "encrypt"),
+		BASE64_ENCODE(ACTION_BASE64ENCODE, "base64encode");
 		private int code = 0;
 		private String name = null;
 		private Action(int code, String name) {
@@ -416,6 +416,8 @@ public abstract class CryptoUtils {
 	public static final int ACTION_SIGN = 8; // sign
 	
 	public static final int ACTION_ENCRYPT = 16; // encrypt
+
+	public static final int ACTION_BASE64ENCODE = 32; // code to base64
 	
 	public byte[] actions(byte[] data, String bufferToFile, String command) throws Exception {
 		int[] actions = null;
@@ -452,6 +454,10 @@ public abstract class CryptoUtils {
 					}
 					case ACTION_ENCRYPT: {
 						buffer = encrypt(buffer);
+						break;
+					}
+					case ACTION_BASE64ENCODE: {
+						buffer = convertDERtoBASE64(buffer);
 						break;
 					}
 				}
