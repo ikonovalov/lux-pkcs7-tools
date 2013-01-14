@@ -6,45 +6,17 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PublicKey;
-import java.security.Security;
-import java.security.SignatureException;
-import java.security.cert.CRLException;
-import java.security.cert.CertStore;
+import java.security.*;
+import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.CertificateParsingException;
-import java.security.cert.CollectionCertStoreParameters;
-import java.security.cert.X509CRL;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERIA5String;
-import org.bouncycastle.asn1.DERObject;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.x509.AccessDescription;
-import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
-import org.bouncycastle.asn1.x509.CRLDistPoint;
-import org.bouncycastle.asn1.x509.DistributionPoint;
-import org.bouncycastle.asn1.x509.DistributionPointName;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.GeneralNames;
-import org.bouncycastle.asn1.x509.IssuingDistributionPoint;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x509.*;
 
 /**
  * 
@@ -74,11 +46,10 @@ public class PKIXUtils {
 			return emptyList;
 		}
 		ASN1InputStream oAsnInStream = new ASN1InputStream(new ByteArrayInputStream(crldpExt));
-		DERObject derObjCrlDP = oAsnInStream.readObject();
-		DEROctetString dosCrlDP = (DEROctetString) derObjCrlDP;
+		DEROctetString dosCrlDP = (DEROctetString) oAsnInStream.readObject();
 		byte[] crldpExtOctets = dosCrlDP.getOctets();
 		ASN1InputStream oAsnInStream2 = new ASN1InputStream(new ByteArrayInputStream(crldpExtOctets));
-		DERObject derObj2 = oAsnInStream2.readObject();
+		ASN1Primitive derObj2 = oAsnInStream2.readObject();
 		CRLDistPoint distPoint = CRLDistPoint.getInstance(derObj2);
 		List<String> crlUrls = new ArrayList<String>(5);
 		for (DistributionPoint dp : distPoint.getDistributionPoints()) {
@@ -116,7 +87,8 @@ public class PKIXUtils {
 		AuthorityInformationAccess authorityInformationAccess;
 		try {
 			DEROctetString oct = (DEROctetString) (new ASN1InputStream(new ByteArrayInputStream(value)).readObject());
-			authorityInformationAccess = new AuthorityInformationAccess((ASN1Sequence) new ASN1InputStream(oct.getOctets()).readObject());
+			ASN1Sequence seq = (ASN1Sequence) new ASN1InputStream(oct.getOctets()).readObject();
+			authorityInformationAccess = AuthorityInformationAccess.getInstance(seq);
 		} catch (IOException e) {
 			throw new RuntimeException("IO error: " + e.getMessage(), e);
 		}
