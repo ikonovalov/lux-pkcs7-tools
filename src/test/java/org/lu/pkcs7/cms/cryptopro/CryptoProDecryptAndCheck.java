@@ -30,7 +30,7 @@ public class CryptoProDecryptAndCheck {
 		
 	
 		CryptoUtils cputilsD = new CryptoProCryptoUtils("C:/Users/user1/Documents/444", "123"); 
-		cputilsD.withVerificationOptions("SKIP_SELFSIGNED_CERT");
+		cputilsD.withVerificationOptions("STORED_CERT_ONLY, SKIP_SELFSIGNED_CERT");
 		byte[] decrypted = cputilsD.actions(encrypted, null,  CryptoUtils.ACTION_DECRYPT, CryptoUtils.ACTION_VERIFY, CryptoUtils.ACTION_DETACH);
 		
 		System.out.println(new String(decrypted));

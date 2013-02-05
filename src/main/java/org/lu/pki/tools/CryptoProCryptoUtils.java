@@ -268,6 +268,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		
 		// выбор случайного отправителя из списка подписчиков
 		final Signer randomSigner = signers.get(new Random().nextInt(signers.size()));
+		LOG.fine("Sending from random signer. We are choosing " + randomSigner.getCert().getSubjectDN());
 		
 		final int recipientListSize = recipients.size();
 		
