@@ -162,7 +162,10 @@ public class CertificateVerifier {
 			// Attempt to build the certification chain
 			PKIXCertPathBuilderResult verifiedCertChain = buildCertificateChain(cert, trustedRootCerts, intermediateCerts, provider);
 			
-			LOG.fine("Start certificate validation (data, crldp, ocsp and so on)");
+			if (LOG.isLoggable(Level.FINE)) {
+				LOG.fine("Start certificate validation (data, crldp, ocsp and so on)");
+				LOG.fine("Revocation strategy: OCSP " + (isOCSPEnabled()?"enabled":"disabled") + ", CRLDP (sun) " + (isSunCRLDPEnabled()? "enabled":"disabled") + ", CRLDP (ibm) " + (isIbmCRLDPEnabled()?"enabled":"disabled"));
+			}
 			// Check whether the certificate is revoked by the CRL
 			// given in its CRL distribution point extension
 			CertPathValidatorResult validatedCertChain = null;

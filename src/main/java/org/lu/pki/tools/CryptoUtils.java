@@ -397,7 +397,7 @@ public abstract class CryptoUtils {
 		VERIFY(ACTION_VERIFY, "verify"),
 		SIGN(ACTION_SIGN, "sign"),
 		ENCRYPT(ACTION_ENCRYPT, "encrypt"),
-		BASE64_ENCODE(ACTION_BASE64ENCODE, "base64encode");
+		BASE64ENCODE(ACTION_BASE64ENCODE, "base64encode");
 		private int code = 0;
 		private String name = null;
 		private Action(int code, String name) {

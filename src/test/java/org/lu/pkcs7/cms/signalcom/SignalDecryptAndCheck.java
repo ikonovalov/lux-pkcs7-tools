@@ -43,8 +43,10 @@ public class SignalDecryptAndCheck {
 		
 		CryptoUtils scutils = new SignalComCryptoUtils(keystoreFile, password); 
 		scutils.signer(signer).recipients(recipient);
-		byte[] encrypted = scutils.actions(sourceData, folder + "sygnal_test.encrypted2", "sign -> encrypt");
+		byte[] encrypted = scutils.actions(sourceData, folder + "sygnal_test.encrypted2", "sign -> base64_encode -> encrypt -> base64_encode");
 
+		System.out.println(" BASE64\n " + new String(encrypted) );
+		
 		encrypted = Array.readFile(folder + "sygnal_test.encrypted2");
 		
 		File f = new File(folder + "sygnal_test.encrypted2");

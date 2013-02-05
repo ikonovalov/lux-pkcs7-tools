@@ -259,15 +259,28 @@ public class PKIXUtils {
 		return "true".equals(Security.getProperty(OCSP_ENABLE));
 	}
 
+	/**
+	 * @deprecated
+	 * Use instead java.security file and option ocsp.enable=true
+	 * @param flag
+	 */
 	public static synchronized final void enableOCSP(boolean flag) {
 		Security.setProperty(OCSP_ENABLE, String.valueOf(flag));
 	}
 
+	/**
+	 * @deprecated
+	 * Use instead command line System properties com.sun.security.enableCRLDP for sun-like vm and com.ibm.security.enableCRLDP for ibm vm
+	 * @param flag
+	 */
 	public static synchronized final void enableCRLDP(boolean flag) {
 		System.setProperty(COM_SUN_SECURITY_ENABLE_CRLDP, String.valueOf(flag));
 		System.setProperty(COM_IBM_SECURITY_ENABLE_CRLDP, String.valueOf(flag));
 	}
 
+	/**
+	 * @deprecated use System properties command line options and java.security file
+	 */
 	public static synchronized final void switchOnOCSPandCRLDP() {
 		enableOCSP(true);
 		enableCRLDP(true);
