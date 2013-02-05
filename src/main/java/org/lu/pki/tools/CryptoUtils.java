@@ -253,7 +253,7 @@ public abstract class CryptoUtils {
 	}
 	
 	/**
-	 * Поиск в хранилище KeyStore сертификата по серийному номеру
+	 * Поиск в хранилище KeyStore алиаса сертификата по серийному номеру
 	 * @param serialNumber
 	 * @return null - если сертификат не найден.
 	 * @throws KeyStoreException
@@ -264,7 +264,7 @@ public abstract class CryptoUtils {
 		while(aliasesEnum.hasMoreElements()) {
 			String currentAlias = aliasesEnum.nextElement();
 			X509Certificate cer = getCertificateFromStore(currentAlias);
-			if (cer.getSerialNumber().equals(serialNumber) && getKeyStore().isKeyEntry(currentAlias)) {
+			if (cer.getSerialNumber().equals(serialNumber) /*&& getKeyStore().isKeyEntry(currentAlias)*/) { // Мы должны получать все алиасы, а не только для ключей
 				res = currentAlias;
 				break;
 			}
@@ -273,7 +273,7 @@ public abstract class CryptoUtils {
 	}
 	
 	/**
-	 * Поиск в хранилище KeyStore сертификата по SubjectKeyIdentefer
+	 * Поиск в хранилище KeyStore алиаса сертификата по SubjectKeyIdentefer
 	 * @param ski
 	 * @return null - если сертификат не найден.
 	 * @throws KeyStoreException
@@ -285,7 +285,7 @@ public abstract class CryptoUtils {
 			String currentAlias = aliasesEnum.nextElement();
 			X509Certificate cer = getCertificateFromStore(currentAlias);
 			byte[] currentSKI = cer.getExtensionValue(SUBJECT_KEY_IDENTEFER_OID);
-			if (Arrays.equals(ski, currentSKI) && getKeyStore().isKeyEntry(currentAlias)) {
+			if (Arrays.equals(ski, currentSKI) /*&& getKeyStore().isKeyEntry(currentAlias)*/) {
 				res = currentAlias;
 				break;
 			}

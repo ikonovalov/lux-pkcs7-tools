@@ -529,13 +529,20 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 		    }
 		    
 		    // Идентификация получателя
-		    String recipientAliase = lookupKeyAlias(keytrans.rid);
+		    String recipientAliase = lookupAlias(keytrans.rid);
 		    if (recipientAliase == null) {
 		    	LOG.warning("Skip RecipientInfo because RI in a keystore not found by SERIAL or SKI or unknown type -> " + keytrans.rid.getElemName());
 		    	continue;
 		    }
 		    
 		    PrivateKey recipientPrivateKey = getKeyFromStore(recipientAliase, storePassword);
+		    
+		    if (recipientPrivateKey == null) {
+		    	if (LOG.isLoggable(Level.WARNING)) {
+		    		LOG.warning("Key not found for alias '" + recipientAliase + "', but cert's alias exists. Skipping this recipient.");
+		    	}
+		    	continue;
+		    }
 		    
 		    // разбор параметров ключа
 		    final Asn1BerEncodeBuffer ebuf = new Asn1BerEncodeBuffer();
@@ -594,7 +601,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	 * @return null - если сертификат не найден в хранилище
 	 * @throws KeyStoreException
 	 */
-	private String lookupKeyAlias(SignerIdentifier signerIdentifier) throws KeyStoreException {
+	private String lookupAlias(SignerIdentifier signerIdentifier) throws KeyStoreException {
 		String res = null;
 		if (signerIdentifier.getChoiceID() == SignerIdentifier._ISSUERANDSERIALNUMBER) {
 			IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) signerIdentifier.getElement();
@@ -613,14 +620,14 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 	}
 	
 	/**
-	 * Поиск алиаса ключа (и сертификата) в хранилище по RecipientIdentifier.
+	 * Поиск алиаса в хранилище по RecipientIdentifier.
 	 * Поиск производится по SERIAL или SKI в сертификатах + наличие по тому же алиасу ключа.
 	 * @param recipientIdentifier RecipientIdentifier
 	 * @return Алиас соответствующий сертификату по данным из RI. (Serial или SubjectKeyIdentefer(cert extension)). Или null если соответствующий сертификат не найден.
 	 * @throws RecipientIdentifierNotFound
 	 * @throws KeyStoreException 
 	 */
-	private String lookupKeyAlias(RecipientIdentifier recipientIdentifier) throws KeyStoreException {
+	private String lookupAlias(RecipientIdentifier recipientIdentifier) throws KeyStoreException {
 		String res = null;
 		if (recipientIdentifier.getChoiceID() == RecipientIdentifier._ISSUERANDSERIALNUMBER) {
 			IssuerAndSerialNumber issuerAndSerialNumber = (IssuerAndSerialNumber) recipientIdentifier.getElement();
@@ -750,7 +757,7 @@ public class CryptoProCryptoUtils extends CryptoUtils {
 			
 			
 			if (cert == null) { // если сертификат не найден во входящих, то ищем в хранилище. (это при условии что не стоит флаг "проверять только из хранилища" = OPT_STORED_CERT_ONLY)
-				cert = getCertificateFromStore(lookupKeyAlias(sid));
+				cert = getCertificateFromStore(lookupAlias(sid));
 				if (cert != null && LOG.isLoggable(Level.FINE)) {
 					LOG.fine("Certificate found in KeyStore for " + signerIdentifierToString(sid));
 				}
