@@ -307,7 +307,7 @@ public abstract class CryptoUtils {
         csel.setIssuer(issuer);
         csel.setSerialNumber(serial);
 
-        return lookupCertificate(stores, csel);
+        return lookupFirstCertificate(stores, csel);
     }
 	
 	/**
@@ -321,7 +321,7 @@ public abstract class CryptoUtils {
 
         X509CertSelector csel = new X509CertSelector();
         csel.setSubjectKeyIdentifier(subjectKeyIdentefer);
-        return lookupCertificate(stores, csel);
+        return lookupFirstCertificate(stores, csel);
     }
 	
 	/**
@@ -331,7 +331,7 @@ public abstract class CryptoUtils {
 	 * @return null - если сертификат не найден
 	 * @throws CertStoreException
 	 */
-	protected X509Certificate lookupCertificate(final List<CertStore> stores, final X509CertSelector selector) throws CertStoreException {
+	protected X509Certificate lookupFirstCertificate(final List<CertStore> stores, final X509CertSelector selector) throws CertStoreException {
         Iterator<CertStore> it = stores.iterator();
         while (it.hasNext()) {
             CertStore store = it.next();
