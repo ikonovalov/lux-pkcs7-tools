@@ -380,6 +380,9 @@ public final class SignalComCryptoUtils extends CryptoUtils {
         InputStream bIn = new ByteArrayInputStream(ciphertext);
 
         ContentInfoParser cinfoParser = ContentInfoParser.getInstance(bIn);
+        if (cinfoParser == null) {
+        	throw new RuntimeException("Container type undeterminated. Type is " + ContentInfoParser.getContentType(bIn));
+        }
         if (!(cinfoParser instanceof EnvelopedDataParser)) {
             throw new RuntimeException("EnvelopedData expected here");
         }
